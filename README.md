@@ -1,8 +1,8 @@
 # MakiDraw
 
 A small drawing app, built one step at a time to learn web development.
-The first milestone is a placeholder page deployed to GitHub Pages.
-Drawing comes next.
+The page has a blank canvas with its 2D drawing context ready.
+Clicking to draw lines comes next.
 
 ## Run locally
 
@@ -18,7 +18,7 @@ Open the local URL printed in the terminal. Editing a file updates the page.
 ## What each file does
 
 - `index.html` defines the page content and loads the TypeScript entry point.
-- `src/main.ts` is where browser behavior will go. For now it just loads the CSS.
+- `src/main.ts` loads the CSS, finds the canvas, and configures its 2D drawing context.
 - `src/style.css` controls the page's appearance.
 - `package.json` lists the development tools and commands.
 - `package-lock.json` records exact dependency versions for repeatable installs.

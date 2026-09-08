@@ -12,17 +12,23 @@ body {
 }
 
 main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 864px;
   padding: 2rem;
   text-align: center;
 }
 
 h1 {
-  margin: 0;
+  margin: 0 0 2rem;
   font-size: 3rem;
   letter-spacing: -0.04em;
 }
 
-p {
-  color: #655f70;
-  line-height: 1.5;
+canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: white;
+  outline: 1px solid #d8d3dd;
 }
