@@ -1,8 +1,9 @@
 # MakiDraw
 
 A small drawing app, built one step at a time to learn web development.
-The page has a blank canvas with its 2D drawing context ready.
-Clicking to draw lines comes next.
+Click once on the canvas to choose a line's start, then click again to draw
+the line to its endpoint. Each pair of clicks adds another line.
+Lines stay on the canvas until you refresh the page.
 
 ## Run locally
 
@@ -18,7 +19,7 @@ Open the local URL printed in the terminal. Editing a file updates the page.
 ## What each file does
 
 - `index.html` defines the page content and loads the TypeScript entry point.
-- `src/main.ts` loads the CSS, finds the canvas, and configures its 2D drawing context.
+- `src/main.ts` handles clicks, remembers the starting point, and draws lines.
 - `src/style.css` controls the page's appearance.
 - `package.json` lists the development tools and commands.
 - `package-lock.json` records exact dependency versions for repeatable installs.
@@ -48,5 +49,5 @@ dependencies with `npm ci`, builds the site, and publishes `dist/`.
 The repository's **Actions** tab shows the progress and any errors.
 You can also start a deployment manually with **Run workflow**.
 
-Try changing the heading in `index.html`, check it locally, then commit and
-push it to see the same change online.
+Try changing the stroke color or line width in `src/main.ts`, check it locally,
+then commit and push it to see the same change online.
