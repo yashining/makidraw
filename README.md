@@ -4,7 +4,8 @@ A small drawing app, built one step at a time to learn web development.
 Click once on the canvas to choose a line's start, then click again to draw
 the line to its endpoint. The unfinished line follows the cursor between clicks.
 Each pair of clicks adds another line.
-Lines stay on the canvas until you refresh the page.
+Completed lines are encoded in the URL, so refreshing or sharing the full URL
+recreates the drawing.
 
 ## Run locally
 
@@ -20,7 +21,7 @@ Open the local URL printed in the terminal. Editing a file updates the page.
 ## What each file does
 
 - `index.html` defines the page content and loads the TypeScript entry point.
-- `src/main.ts` stores line coordinates, handles pointer movement, and redraws the canvas.
+- `src/main.ts` stores line coordinates, redraws the canvas, and syncs lines to the URL.
 - `src/style.css` controls the page's appearance.
 - `package.json` lists the development tools and commands.
 - `package-lock.json` records exact dependency versions for repeatable installs.
