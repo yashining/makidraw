@@ -14,21 +14,40 @@ body {
 main {
   box-sizing: border-box;
   width: 100%;
-  max-width: 864px;
+  max-width: 960px;
   padding: 2rem;
-  text-align: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 800px);
+  gap: 1rem;
+  align-items: start;
 }
 
-h1 {
-  margin: 0 0 2rem;
-  font-size: 3rem;
-  letter-spacing: -0.04em;
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+button {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d8d3dd;
+  border-radius: 0.375rem;
+  font: inherit;
+  color: inherit;
+  background: white;
+  cursor: pointer;
+}
+
+button[aria-pressed="true"] {
+  border-color: #302d36;
+  color: white;
+  background: #302d36;
 }
 
 canvas {
   display: block;
+  width: 100%;
   cursor: crosshair;
-  max-width: 100%;
   height: auto;
   background: white;
   outline: 1px solid #d8d3dd;

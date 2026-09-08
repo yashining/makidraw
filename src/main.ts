@@ -19,11 +19,21 @@ context.strokeStyle = "#302d36";
 context.lineWidth = 2;
 
 type Point = { x: number; y: number };
-type Line = { start: Point; end: Point };
+type ShapeKind = "line" | "rectangle" | "ellipse";
+type Shape = {
+  kind: ShapeKind;
+  start: Point;
+  end: Point;
+};
 type EncodedLine = [number, number, number, number];
-type DrawingData = {
+type EncodedShape = [ShapeKind, number, number, number, number];
+type DrawingDataV1 = {
   version: 1;
   lines: EncodedLine[];
+};
+type DrawingDataV2 = {
+  version: 2;
+  shapes: EncodedShape[];
 };
 
 function isFiniteNumber(value: unknown): value is number {
@@ -38,7 +48,20 @@ function isEncodedLine(value: unknown): value is EncodedLine {
   );
 }
 
-function isDrawingData(value: unknown): value is DrawingData {
+function isShapeKind(value: unknown): value is ShapeKind {
+  return value === "line" || value === "rectangle" || value === "ellipse";
+}
+
+function isEncodedShape(value: unknown): value is EncodedShape {
+  return (
+    Array.isArray(value) &&
+    value.length === 5 &&
+    isShapeKind(value[0]) &&
+    value.slice(1).every(isFiniteNumber)
+  );
+}
+
+function isDrawingDataV1(value: unknown): value is DrawingDataV1 {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -54,13 +77,29 @@ function isDrawingData(value: unknown): value is DrawingData {
   );
 }
 
+function isDrawingDataV2(value: unknown): value is DrawingDataV2 {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("version" in value) || !("shapes" in value)) {
+    return false;
+  }
+
+  return (
+    value.version === 2 &&
+    Array.isArray(value.shapes) &&
+    value.shapes.every(isEncodedShape)
+  );
+}
+
 function removeDrawingFromUrl() {
   const urlWithoutFragment = window.location.pathname + window.location.search;
 
   window.history.replaceState(null, "", urlWithoutFragment);
 }
 
-function loadLinesFromUrl(): Line[] {
+function loadShapesFromUrl(): Shape[] {
   const parameters = new URLSearchParams(window.location.hash.slice(1));
   const drawingJson = parameters.get("drawing");
 
@@ -71,22 +110,34 @@ function loadLinesFromUrl(): Line[] {
   try {
     const drawing: unknown = JSON.parse(drawingJson);
 
-    if (!isDrawingData(drawing)) {
-      removeDrawingFromUrl();
-      return [];
+    if (isDrawingDataV2(drawing)) {
+      return drawing.shapes.map(
+        ([kind, startX, startY, endX, endY]) => ({
+          kind,
+          start: { x: startX, y: startY },
+          end: { x: endX, y: endY },
+        }),
+      );
     }
 
-    return drawing.lines.map(([startX, startY, endX, endY]) => ({
-      start: { x: startX, y: startY },
-      end: { x: endX, y: endY },
-    }));
+    if (isDrawingDataV1(drawing)) {
+      return drawing.lines.map(([startX, startY, endX, endY]) => ({
+        kind: "line",
+        start: { x: startX, y: startY },
+        end: { x: endX, y: endY },
+      }));
+    }
   } catch {
     removeDrawingFromUrl();
     return [];
   }
+
+  removeDrawingFromUrl();
+  return [];
 }
 
-const lines = loadLinesFromUrl();
+const shapes = loadShapesFromUrl();
+let selectedTool: ShapeKind = "line";
 let startPoint: Point | null = null;
 let cursorPoint: Point | null = null;
 
@@ -106,26 +157,61 @@ function drawLine(start: Point, end: Point) {
   context.stroke();
 }
 
+function drawRectangle(start: Point, end: Point) {
+  const left = Math.min(start.x, end.x);
+  const top = Math.min(start.y, end.y);
+  const width = Math.abs(end.x - start.x);
+  const height = Math.abs(end.y - start.y);
+
+  context.strokeRect(left, top, width, height);
+}
+
+function drawEllipse(start: Point, end: Point) {
+  const centerX = (start.x + end.x) / 2;
+  const centerY = (start.y + end.y) / 2;
+  const radiusX = Math.abs(end.x - start.x) / 2;
+  const radiusY = Math.abs(end.y - start.y) / 2;
+
+  context.beginPath();
+  context.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+  context.stroke();
+}
+
+function drawShape(shape: Shape) {
+  switch (shape.kind) {
+    case "line":
+      drawLine(shape.start, shape.end);
+      break;
+    case "rectangle":
+      drawRectangle(shape.start, shape.end);
+      break;
+    case "ellipse":
+      drawEllipse(shape.start, shape.end);
+      break;
+  }
+}
+
 function render() {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (const line of lines) {
-    drawLine(line.start, line.end);
+  for (const shape of shapes) {
+    drawShape(shape);
   }
 
   if (startPoint !== null && cursorPoint !== null) {
-    drawLine(startPoint, cursorPoint);
+    drawShape({ kind: selectedTool, start: startPoint, end: cursorPoint });
   }
 }
 
 function updateUrl() {
-  const drawing: DrawingData = {
-    version: 1,
-    lines: lines.map<EncodedLine>((line) => [
-      Math.round(line.start.x),
-      Math.round(line.start.y),
-      Math.round(line.end.x),
-      Math.round(line.end.y),
+  const drawing: DrawingDataV2 = {
+    version: 2,
+    shapes: shapes.map<EncodedShape>((shape) => [
+      shape.kind,
+      Math.round(shape.start.x),
+      Math.round(shape.start.y),
+      Math.round(shape.end.x),
+      Math.round(shape.end.y),
     ]),
   };
   const parameters = new URLSearchParams({
@@ -144,7 +230,7 @@ canvas.addEventListener("click", (event) => {
     return;
   }
 
-  lines.push({ start: startPoint, end: point });
+  shapes.push({ kind: selectedTool, start: startPoint, end: point });
   updateUrl();
   startPoint = null;
   cursorPoint = null;
@@ -164,5 +250,30 @@ canvas.addEventListener("mouseleave", () => {
   cursorPoint = null;
   render();
 });
+
+const toolButtons = document.querySelectorAll<HTMLButtonElement>("[data-tool]");
+
+for (const button of toolButtons) {
+  button.addEventListener("click", () => {
+    const tool = button.dataset.tool;
+
+    if (!isShapeKind(tool)) {
+      return;
+    }
+
+    selectedTool = tool;
+    startPoint = null;
+    cursorPoint = null;
+
+    for (const toolButton of toolButtons) {
+      toolButton.setAttribute(
+        "aria-pressed",
+        String(toolButton.dataset.tool === selectedTool),
+      );
+    }
+
+    render();
+  });
+}
 
 render();
