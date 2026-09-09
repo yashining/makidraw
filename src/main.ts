@@ -418,6 +418,19 @@ for (const button of toolButtons) {
   });
 }
 
+function selectColor(color: ShapeColor) {
+  selectedColor = color;
+
+  for (const colorButton of colorButtons) {
+    colorButton.setAttribute(
+      "aria-pressed",
+      String(colorButton.dataset.color === selectedColor),
+    );
+  }
+
+  render();
+}
+
 for (const button of colorButtons) {
   button.addEventListener("click", () => {
     const color = button.dataset.color;
@@ -426,16 +439,7 @@ for (const button of colorButtons) {
       return;
     }
 
-    selectedColor = color;
-
-    for (const colorButton of colorButtons) {
-      colorButton.setAttribute(
-        "aria-pressed",
-        String(colorButton.dataset.color === selectedColor),
-      );
-    }
-
-    render();
+    selectColor(color);
   });
 }
 
@@ -447,6 +451,13 @@ const toolShortcuts: Partial<Record<string, ShapeKind>> = {
   r: "rectangle",
   e: "ellipse",
   t: "text",
+};
+
+const colorShortcuts: Partial<Record<string, ShapeColor>> = {
+  1: "black",
+  2: "red",
+  3: "blue",
+  4: "green",
 };
 
 document.addEventListener("keydown", (event) => {
@@ -464,10 +475,15 @@ document.addEventListener("keydown", (event) => {
   }
 
   const key = event.key.toLowerCase();
-  const tool = toolShortcuts[key];
   const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
+
+  const tool = toolShortcuts[key];
   if (tool !== undefined && !hasModifier) {
     selectTool(tool);
+  }
+  const color = colorShortcuts[key];
+  if (color !== undefined && !hasModifier) {
+    selectColor(color);
   }
 });
 
