@@ -26,7 +26,9 @@ Open the local URL printed in the terminal. Editing a file updates the page.
 ## What each file does
 
 - `index.html` defines the page content and loads the TypeScript entry point.
-- `src/main.ts` stores shapes, redraws the canvas, and syncs shapes to the URL.
+- `src/main.ts` coordinates drawing state, rendering, and browser interactions.
+- `src/model.ts` defines the drawing concepts shared by the app.
+- `src/drawing-url.ts` validates old URL formats and saves the current format.
 - `src/style.css` controls the page's appearance.
 - `package.json` lists the development tools and commands.
 - `package-lock.json` records exact dependency versions for repeatable installs.
