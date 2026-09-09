@@ -58,6 +58,7 @@ canvas {
   width: 100%;
   cursor: crosshair;
   height: auto;
+  touch-action: none;
   background: white;
   outline: 1px solid #d8d3dd;
 }

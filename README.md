@@ -1,9 +1,8 @@
 # MakiDraw
 
 A small drawing app, built one step at a time to learn web development.
-Choose a line, rectangle, or ellipse from the toolbar. Click once on the canvas
-to choose the first point, then click again to choose the opposite corner or
-line endpoint. The unfinished shape follows the cursor between clicks.
+Choose a line, rectangle, or ellipse from the toolbar. Draw by clicking two
+points, or press, drag, and release. The unfinished shape follows the pointer.
 Completed shapes are encoded in the URL, so refreshing or sharing the full URL
 recreates the drawing.
 

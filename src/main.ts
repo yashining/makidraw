@@ -153,8 +153,13 @@ const undoStack: Shape[][] = [];
 let selectedTool: ShapeKind = "line";
 let startPoint: Point | null = null;
 let cursorPoint: Point | null = null;
+let pressedCanvasPoint: Point | null = null;
+let pressedClientPoint: Point | null = null;
+let activePointerId: number | null = null;
+let isDragging = false;
+const dragThreshold = 4;
 
-function getCanvasPoint(event: MouseEvent): Point {
+function getCanvasPoint(event: PointerEvent): Point {
   const bounds = canvas.getBoundingClientRect();
 
   return {
@@ -242,7 +247,36 @@ function updateUrl() {
   window.history.replaceState(null, "", `#${parameters.toString()}`);
 }
 
+function finishShape(endPoint: Point) {
+  if (startPoint === null) {
+    return;
+  }
+
+  undoStack.push([...shapes]);
+  shapes.push({ kind: selectedTool, start: startPoint, end: endPoint });
+  updateUrl();
+  startPoint = null;
+  cursorPoint = null;
+  render();
+}
+
+function resetPointerGesture() {
+  if (
+    activePointerId !== null &&
+    canvas.hasPointerCapture(activePointerId)
+  ) {
+    canvas.releasePointerCapture(activePointerId);
+  }
+
+  activePointerId = null;
+  pressedCanvasPoint = null;
+  pressedClientPoint = null;
+  isDragging = false;
+}
+
 function undo() {
+  resetPointerGesture();
+
   if (startPoint !== null) {
     startPoint = null;
     cursorPoint = null;
@@ -262,6 +296,7 @@ function undo() {
 }
 
 function clearDrawing() {
+  resetPointerGesture();
   const hasDraft = startPoint !== null;
 
   if (!hasDraft && shapes.length === 0) {
@@ -280,8 +315,65 @@ function clearDrawing() {
   render();
 }
 
-canvas.addEventListener("click", (event) => {
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0 || activePointerId !== null) {
+    return;
+  }
+
+  activePointerId = event.pointerId;
+  pressedCanvasPoint = getCanvasPoint(event);
+  pressedClientPoint = { x: event.clientX, y: event.clientY };
+  isDragging = false;
+  canvas.setPointerCapture(event.pointerId);
+
+  if (startPoint !== null) {
+    cursorPoint = pressedCanvasPoint;
+    render();
+  }
+});
+
+canvas.addEventListener("pointermove", (event) => {
+  if (activePointerId !== null && event.pointerId !== activePointerId) {
+    return;
+  }
+
   const point = getCanvasPoint(event);
+
+  if (
+    activePointerId === event.pointerId &&
+    pressedCanvasPoint !== null &&
+    pressedClientPoint !== null &&
+    startPoint === null &&
+    Math.hypot(
+      event.clientX - pressedClientPoint.x,
+      event.clientY - pressedClientPoint.y,
+    ) >= dragThreshold
+  ) {
+    isDragging = true;
+    startPoint = pressedCanvasPoint;
+  }
+
+  if (startPoint === null) {
+    return;
+  }
+
+  cursorPoint = point;
+  render();
+});
+
+canvas.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== activePointerId) {
+    return;
+  }
+
+  const point = getCanvasPoint(event);
+  const completedDrag = isDragging;
+  resetPointerGesture();
+
+  if (completedDrag) {
+    finishShape(point);
+    return;
+  }
 
   if (startPoint === null) {
     startPoint = point;
@@ -290,24 +382,21 @@ canvas.addEventListener("click", (event) => {
     return;
   }
 
-  undoStack.push([...shapes]);
-  shapes.push({ kind: selectedTool, start: startPoint, end: point });
-  updateUrl();
+  finishShape(point);
+});
+
+canvas.addEventListener("pointercancel", () => {
+  resetPointerGesture();
   startPoint = null;
   cursorPoint = null;
   render();
 });
 
-canvas.addEventListener("mousemove", (event) => {
-  if (startPoint === null) {
+canvas.addEventListener("pointerleave", () => {
+  if (activePointerId !== null) {
     return;
   }
 
-  cursorPoint = getCanvasPoint(event);
-  render();
-});
-
-canvas.addEventListener("mouseleave", () => {
   cursorPoint = null;
   render();
 });
@@ -322,6 +411,7 @@ for (const button of toolButtons) {
       return;
     }
 
+    resetPointerGesture();
     selectedTool = tool;
     startPoint = null;
     cursorPoint = null;
