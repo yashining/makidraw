@@ -339,7 +339,10 @@ document.addEventListener("keydown", (event) => {
     !event.shiftKey &&
     event.key.toLowerCase() === "z";
 
-  if (isUndoShortcut) {
+  const isCancelShortcut =
+    event.key === "Escape" && startPoint !== null;
+
+  if (isUndoShortcut || isCancelShortcut) {
     event.preventDefault();
     undo();
   }
