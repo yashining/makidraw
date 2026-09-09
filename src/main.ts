@@ -49,6 +49,7 @@ let pressedClientPoint: Point | null = null;
 let activePointerId: number | null = null;
 let isDragging = false;
 const dragThreshold = 4;
+const shapeOpacity = 0.6
 
 function getCanvasPoint(event: PointerEvent): Point {
   const bounds = canvas.getBoundingClientRect();
@@ -87,6 +88,8 @@ function drawEllipse(start: Point, end: Point) {
 }
 
 function drawShape(shape: Shape) {
+  context.save()
+  context.globalAlpha = shapeOpacity;
   context.strokeStyle = shape.color;
 
   switch (shape.kind) {
@@ -100,6 +103,7 @@ function drawShape(shape: Shape) {
       drawEllipse(shape.start, shape.end);
       break;
   }
+  context.restore()
 }
 
 function render() {

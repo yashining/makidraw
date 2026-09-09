@@ -9,31 +9,82 @@
   <body>
     <main>
       <div class="toolbar" role="toolbar" aria-label="Drawing tools">
-        <button type="button" data-tool="line" aria-pressed="true">Line</button>
-        <button type="button" data-tool="rectangle" aria-pressed="false">
-          Rectangle
-        </button>
-        <button type="button" data-tool="ellipse" aria-pressed="false">
-          Ellipse
-        </button>
-        <div class="color-controls" role="group" aria-label="Stroke color">
-          <button type="button" data-color="black" aria-pressed="true">
-            Black
+        <div class="tool-controls" role="group" aria-label="Shape">
+          <button
+            class="square-button tool-button"
+            type="button"
+            data-tool="line"
+            aria-label="Line"
+            aria-pressed="true"
+            title="Line (L)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 19 19 5" />
+            </svg>
           </button>
-          <button type="button" data-color="red" aria-pressed="false">
-            Red
+          <button
+            class="square-button tool-button"
+            type="button"
+            data-tool="rectangle"
+            aria-label="Rectangle"
+            aria-pressed="false"
+            title="Rectangle (R)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="5" width="16" height="14" rx="1" />
+            </svg>
           </button>
-          <button type="button" data-color="blue" aria-pressed="false">
-            Blue
-          </button>
-          <button type="button" data-color="green" aria-pressed="false">
-            Green
+          <button
+            class="square-button tool-button"
+            type="button"
+            data-tool="ellipse"
+            aria-label="Ellipse"
+            aria-pressed="false"
+            title="Ellipse (E)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <ellipse cx="12" cy="12" rx="8" ry="6" />
+            </svg>
           </button>
         </div>
-        <button id="undo" class="undo-button" type="button" disabled>
-          Undo
-        </button>
-        <button id="clear" type="button" disabled>Clear</button>
+        <div class="color-controls" role="group" aria-label="Stroke color">
+          <button
+            class="square-button color-button"
+            type="button"
+            data-color="black"
+            aria-label="Black"
+            aria-pressed="true"
+            title="Black"
+          ></button>
+          <button
+            class="square-button color-button"
+            type="button"
+            data-color="red"
+            aria-label="Red"
+            aria-pressed="false"
+            title="Red"
+          ></button>
+          <button
+            class="square-button color-button"
+            type="button"
+            data-color="blue"
+            aria-label="Blue"
+            aria-pressed="false"
+            title="Blue"
+          ></button>
+          <button
+            class="square-button color-button"
+            type="button"
+            data-color="green"
+            aria-label="Green"
+            aria-pressed="false"
+            title="Green"
+          ></button>
+        </div>
+        <div class="action-controls">
+          <button id="undo" type="button" disabled>Undo</button>
+          <button id="clear" type="button" disabled>Clear</button>
+        </div>
       </div>
       <canvas id="drawing" width="800" height="500" aria-label="Drawing area">
         Your browser does not support canvas.
