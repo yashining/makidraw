@@ -8,12 +8,24 @@ if (!(canvasElement instanceof HTMLCanvasElement)) {
 
 const canvas = canvasElement;
 const drawingContext = canvas.getContext("2d");
+const undoButtonElement = document.querySelector("#undo");
+const clearButtonElement = document.querySelector("#clear");
 
 if (!drawingContext) {
   throw new Error("Could not get a drawing context");
 }
 
+if (!(undoButtonElement instanceof HTMLButtonElement)) {
+  throw new Error("Undo button was not found");
+}
+
+if (!(clearButtonElement instanceof HTMLButtonElement)) {
+  throw new Error("Clear button was not found");
+}
+
 const context = drawingContext;
+const undoButton = undoButtonElement;
+const clearButton = clearButtonElement;
 
 context.strokeStyle = "#302d36";
 context.lineWidth = 2;
@@ -137,6 +149,7 @@ function loadShapesFromUrl(): Shape[] {
 }
 
 const shapes = loadShapesFromUrl();
+const undoStack: Shape[][] = [];
 let selectedTool: ShapeKind = "line";
 let startPoint: Point | null = null;
 let cursorPoint: Point | null = null;
@@ -201,9 +214,17 @@ function render() {
   if (startPoint !== null && cursorPoint !== null) {
     drawShape({ kind: selectedTool, start: startPoint, end: cursorPoint });
   }
+
+  undoButton.disabled = startPoint === null && undoStack.length === 0;
+  clearButton.disabled = startPoint === null && shapes.length === 0;
 }
 
 function updateUrl() {
+  if (shapes.length === 0) {
+    removeDrawingFromUrl();
+    return;
+  }
+
   const drawing: DrawingDataV2 = {
     version: 2,
     shapes: shapes.map<EncodedShape>((shape) => [
@@ -221,15 +242,55 @@ function updateUrl() {
   window.history.replaceState(null, "", `#${parameters.toString()}`);
 }
 
+function undo() {
+  if (startPoint !== null) {
+    startPoint = null;
+    cursorPoint = null;
+  } else {
+    const previousShapes = undoStack.pop();
+
+    if (previousShapes === undefined) {
+      return;
+    }
+
+    shapes.length = 0;
+    shapes.push(...previousShapes);
+    updateUrl();
+  }
+
+  render();
+}
+
+function clearDrawing() {
+  const hasDraft = startPoint !== null;
+
+  if (!hasDraft && shapes.length === 0) {
+    return;
+  }
+
+  startPoint = null;
+  cursorPoint = null;
+
+  if (shapes.length > 0) {
+    undoStack.push([...shapes]);
+    shapes.length = 0;
+    updateUrl();
+  }
+
+  render();
+}
+
 canvas.addEventListener("click", (event) => {
   const point = getCanvasPoint(event);
 
   if (startPoint === null) {
     startPoint = point;
     cursorPoint = point;
+    render();
     return;
   }
 
+  undoStack.push([...shapes]);
   shapes.push({ kind: selectedTool, start: startPoint, end: point });
   updateUrl();
   startPoint = null;
@@ -275,5 +336,20 @@ for (const button of toolButtons) {
     render();
   });
 }
+
+undoButton.addEventListener("click", undo);
+clearButton.addEventListener("click", clearDrawing);
+
+document.addEventListener("keydown", (event) => {
+  const isUndoShortcut =
+    (event.ctrlKey || event.metaKey) &&
+    !event.shiftKey &&
+    event.key.toLowerCase() === "z";
+
+  if (isUndoShortcut) {
+    event.preventDefault();
+    undo();
+  }
+});
 
 render();

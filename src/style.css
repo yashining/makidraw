@@ -44,6 +44,15 @@ button[aria-pressed="true"] {
   background: #302d36;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.undo-button {
+  margin-top: 0.5rem;
+}
+
 canvas {
   display: block;
   width: 100%;

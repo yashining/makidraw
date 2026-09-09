@@ -7,6 +7,10 @@ line endpoint. The unfinished shape follows the cursor between clicks.
 Completed shapes are encoded in the URL, so refreshing or sharing the full URL
 recreates the drawing.
 
+Use the Undo button or press Ctrl+Z (Cmd+Z on macOS) to cancel an unfinished
+shape or restore the previous drawing. Clear removes every shape, and Undo can
+restore the cleared drawing.
+
 ## Run locally
 
 Use Node.js 22.12+ (Node 20.19+ also works) and npm.
