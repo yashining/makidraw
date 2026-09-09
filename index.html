@@ -46,6 +46,18 @@
               <ellipse cx="12" cy="12" rx="8" ry="6" />
             </svg>
           </button>
+          <button
+            class="square-button tool-button"
+            type="button"
+            data-tool="text"
+            aria-label="Text"
+            aria-pressed="false"
+            title="Text (T)"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6h12M12 6v12" />
+            </svg>
+          </button>
         </div>
         <div class="color-controls" role="group" aria-label="Stroke color">
           <button
@@ -86,9 +98,19 @@
           <button id="clear" type="button" disabled>Clear</button>
         </div>
       </div>
-      <canvas id="drawing" width="800" height="500" aria-label="Drawing area">
-        Your browser does not support canvas.
-      </canvas>
+      <div class="canvas-container">
+        <canvas id="drawing" width="800" height="500" aria-label="Drawing area">
+          Your browser does not support canvas.
+        </canvas>
+        <input
+          id="text-editor"
+          class="text-editor"
+          type="text"
+          aria-label="Drawing text"
+          autocomplete="off"
+          hidden
+        />
+      </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

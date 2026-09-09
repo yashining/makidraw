@@ -45,7 +45,7 @@ button {
 }
 
 .tool-controls {
-  grid-template-columns: repeat(3, 2.5rem);
+  grid-template-columns: repeat(4, 2.5rem);
 }
 
 .square-button {
@@ -121,6 +121,11 @@ button:disabled {
   gap: 0.375rem;
 }
 
+.canvas-container {
+  position: relative;
+  min-width: 0;
+}
+
 canvas {
   display: block;
   width: 100%;
@@ -129,6 +134,30 @@ canvas {
   touch-action: none;
   background: white;
   outline: 1px solid #d8d3dd;
+}
+
+.text-editor {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 12rem;
+  margin: 0;
+  padding: 0.125rem 0.25rem;
+  border: 1px solid #8d8794;
+  border-radius: 0.25rem;
+  font-family: system-ui, sans-serif;
+  line-height: 1.2;
+  background: rgb(255 255 255 / 90%);
+  outline: none;
+}
+
+.text-editor:focus {
+  border-color: #302d36;
+  box-shadow: 0 0 0 2px rgb(48 45 54 / 15%);
+}
+
+.text-editor[hidden] {
+  display: none;
 }
 
 @media (max-width: 700px) {

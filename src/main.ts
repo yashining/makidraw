@@ -19,6 +19,7 @@ const canvas = canvasElement;
 const drawingContext = canvas.getContext("2d");
 const undoButtonElement = document.querySelector("#undo");
 const clearButtonElement = document.querySelector("#clear");
+const textEditorElement = document.querySelector("#text-editor");
 
 if (!drawingContext) {
   throw new Error("Could not get a drawing context");
@@ -32,9 +33,14 @@ if (!(clearButtonElement instanceof HTMLButtonElement)) {
   throw new Error("Clear button was not found");
 }
 
+if (!(textEditorElement instanceof HTMLInputElement)) {
+  throw new Error("Text editor was not found");
+}
+
 const context = drawingContext;
 const undoButton = undoButtonElement;
 const clearButton = clearButtonElement;
+const textEditor = textEditorElement;
 
 context.lineWidth = 2;
 
@@ -48,10 +54,13 @@ let pressedCanvasPoint: Point | null = null;
 let pressedClientPoint: Point | null = null;
 let activePointerId: number | null = null;
 let isDragging = false;
+let textPosition: Point | null = null;
 const dragThreshold = 4;
-const shapeOpacity = 0.6
+const geometricShapeOpacity = 0.6;
+const textOpacity = 0.8;
+const textFontSize = 20;
 
-function getCanvasPoint(event: PointerEvent): Point {
+function getCanvasPoint(event: MouseEvent): Point {
   const bounds = canvas.getBoundingClientRect();
 
   return {
@@ -88,9 +97,10 @@ function drawEllipse(start: Point, end: Point) {
 }
 
 function drawShape(shape: Shape) {
-  context.save()
-  context.globalAlpha = shapeOpacity;
+  context.save();
+  context.globalAlpha = geometricShapeOpacity;
   context.strokeStyle = shape.color;
+  context.fillStyle = shape.color;
 
   switch (shape.kind) {
     case "line":
@@ -102,8 +112,14 @@ function drawShape(shape: Shape) {
     case "ellipse":
       drawEllipse(shape.start, shape.end);
       break;
+    case "text":
+      context.globalAlpha = textOpacity;
+      context.font = `${textFontSize}px system-ui`;
+      context.textBaseline = "top";
+      context.fillText(shape.text, shape.position.x, shape.position.y);
+      break;
   }
-  context.restore()
+  context.restore();
 }
 
 function render() {
@@ -113,7 +129,11 @@ function render() {
     drawShape(shape);
   }
 
-  if (startPoint !== null && cursorPoint !== null) {
+  if (
+    selectedTool !== "text" &&
+    startPoint !== null &&
+    cursorPoint !== null
+  ) {
     drawShape({
       kind: selectedTool,
       color: selectedColor,
@@ -122,12 +142,14 @@ function render() {
     });
   }
 
-  undoButton.disabled = startPoint === null && undoStack.length === 0;
-  clearButton.disabled = startPoint === null && shapes.length === 0;
+  const hasDraft = startPoint !== null || textPosition !== null;
+
+  undoButton.disabled = !hasDraft && undoStack.length === 0;
+  clearButton.disabled = !hasDraft && shapes.length === 0;
 }
 
 function finishShape(endPoint: Point) {
-  if (startPoint === null) {
+  if (startPoint === null || selectedTool === "text") {
     return;
   }
 
@@ -141,6 +163,58 @@ function finishShape(endPoint: Point) {
   saveShapesToUrl(shapes);
   startPoint = null;
   cursorPoint = null;
+  render();
+}
+
+function closeTextEditor() {
+  textPosition = null;
+  textEditor.hidden = true;
+  textEditor.value = "";
+}
+
+function cancelText() {
+  closeTextEditor();
+  render();
+}
+
+function commitText() {
+  if (textPosition === null) {
+    return;
+  }
+
+  const position = textPosition;
+  const text = textEditor.value.trim();
+
+  closeTextEditor();
+
+  if (text.length === 0) {
+    render();
+    return;
+  }
+
+  undoStack.push([...shapes]);
+  shapes.push({
+    kind: "text",
+    color: selectedColor,
+    position,
+    text,
+  });
+  saveShapesToUrl(shapes);
+  render();
+}
+
+function openTextEditor(position: Point) {
+  const bounds = canvas.getBoundingClientRect();
+  const scaleX = bounds.width / canvas.width;
+  const scaleY = bounds.height / canvas.height;
+
+  textPosition = position;
+  textEditor.style.left = `${position.x * scaleX}px`;
+  textEditor.style.top = `${position.y * scaleY}px`;
+  textEditor.style.fontSize = `${textFontSize * scaleY}px`;
+  textEditor.style.color = selectedColor;
+  textEditor.hidden = false;
+  textEditor.focus();
   render();
 }
 
@@ -161,7 +235,9 @@ function resetPointerGesture() {
 function undo() {
   resetPointerGesture();
 
-  if (startPoint !== null) {
+  if (textPosition !== null) {
+    closeTextEditor();
+  } else if (startPoint !== null) {
     startPoint = null;
     cursorPoint = null;
   } else {
@@ -181,12 +257,13 @@ function undo() {
 
 function clearDrawing() {
   resetPointerGesture();
-  const hasDraft = startPoint !== null;
+  const hasDraft = startPoint !== null || textPosition !== null;
 
   if (!hasDraft && shapes.length === 0) {
     return;
   }
 
+  closeTextEditor();
   startPoint = null;
   cursorPoint = null;
 
@@ -200,7 +277,11 @@ function clearDrawing() {
 }
 
 canvas.addEventListener("pointerdown", (event) => {
-  if (event.button !== 0 || activePointerId !== null) {
+  if (
+    selectedTool === "text" ||
+    event.button !== 0 ||
+    activePointerId !== null
+  ) {
     return;
   }
 
@@ -285,6 +366,28 @@ canvas.addEventListener("pointerleave", () => {
   render();
 });
 
+canvas.addEventListener("click", (event) => {
+  if (selectedTool !== "text") {
+    return;
+  }
+
+  openTextEditor(getCanvasPoint(event));
+});
+
+textEditor.addEventListener("keydown", (event) => {
+  event.stopPropagation();
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    commitText();
+  } else if (event.key === "Escape") {
+    event.preventDefault();
+    cancelText();
+  }
+});
+
+textEditor.addEventListener("blur", commitText);
+
 const toolButtons = document.querySelectorAll<HTMLButtonElement>("[data-tool]");
 const colorButtons =
   document.querySelectorAll<HTMLButtonElement>("[data-color]");
@@ -343,6 +446,7 @@ const toolShortcuts: Partial<Record<string, ShapeKind>> = {
   l: "line",
   r: "rectangle",
   e: "ellipse",
+  t: "text",
 };
 
 document.addEventListener("keydown", (event) => {
@@ -365,7 +469,6 @@ document.addEventListener("keydown", (event) => {
   if (tool !== undefined && !hasModifier) {
     selectTool(tool);
   }
-
 });
 
 render();
