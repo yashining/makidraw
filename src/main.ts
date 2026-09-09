@@ -285,27 +285,29 @@ const toolButtons = document.querySelectorAll<HTMLButtonElement>("[data-tool]");
 const colorButtons =
   document.querySelectorAll<HTMLButtonElement>("[data-color]");
 
+function selectTool(tool: ShapeKind) {
+  resetPointerGesture();
+  selectedTool = tool;
+  startPoint = null;
+  cursorPoint = null;
+
+  for (const toolButton of toolButtons) {
+    toolButton.setAttribute(
+      "aria-pressed",
+      String(toolButton.dataset.tool === selectedTool),
+    );
+  }
+
+  render();
+}
+
 for (const button of toolButtons) {
   button.addEventListener("click", () => {
     const tool = button.dataset.tool;
-
     if (!isShapeKind(tool)) {
       return;
     }
-
-    resetPointerGesture();
-    selectedTool = tool;
-    startPoint = null;
-    cursorPoint = null;
-
-    for (const toolButton of toolButtons) {
-      toolButton.setAttribute(
-        "aria-pressed",
-        String(toolButton.dataset.tool === selectedTool),
-      );
-    }
-
-    render();
+    selectTool(tool);
   });
 }
 
@@ -333,6 +335,12 @@ for (const button of colorButtons) {
 undoButton.addEventListener("click", undo);
 clearButton.addEventListener("click", clearDrawing);
 
+const toolShortcuts: Partial<Record<string, ShapeKind>> = {
+  l: "line",
+  r: "rectangle",
+  e: "ellipse",
+};
+
 document.addEventListener("keydown", (event) => {
   const isUndoShortcut =
     (event.ctrlKey || event.metaKey) &&
@@ -346,6 +354,14 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     undo();
   }
+
+  const key = event.key.toLowerCase();
+  const tool = toolShortcuts[key];
+  const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
+  if (tool !== undefined && !hasModifier) {
+    selectTool(tool);
+  }
+
 });
 
 render();
