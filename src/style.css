@@ -38,10 +38,38 @@ button {
   cursor: pointer;
 }
 
-button[aria-pressed="true"] {
+button[data-tool][aria-pressed="true"] {
   border-color: #302d36;
   color: white;
   background: #302d36;
+}
+
+.color-controls {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #d8d3dd;
+}
+
+button[data-color="black"] {
+  color: black;
+}
+
+button[data-color="red"] {
+  color: red;
+}
+
+button[data-color="blue"] {
+  color: blue;
+}
+
+button[data-color="green"] {
+  color: green;
+}
+
+button[data-color][aria-pressed="true"] {
+  border-color: currentColor;
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 
 button:disabled {
@@ -50,7 +78,7 @@ button:disabled {
 }
 
 .undo-button {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 canvas {

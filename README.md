@@ -2,9 +2,11 @@
 
 A small drawing app, built one step at a time to learn web development.
 Choose a line, rectangle, or ellipse from the toolbar. Draw by clicking two
-points, or press, drag, and release. The unfinished shape follows the pointer.
+points, or press, drag, and release. Choose black, red, blue, or green for the
+stroke. The unfinished shape follows the pointer.
 Completed shapes are encoded in the URL, so refreshing or sharing the full URL
-recreates the drawing.
+recreates the drawing. Older version 1 and version 2 links still load with black
+shapes; new links use version 3 to store each shape's color.
 
 Use the Undo button or press Ctrl+Z (Cmd+Z on macOS) to cancel an unfinished
 shape or restore the previous drawing. Clear removes every shape, and Undo can

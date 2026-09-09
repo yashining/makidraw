@@ -27,25 +27,38 @@ const context = drawingContext;
 const undoButton = undoButtonElement;
 const clearButton = clearButtonElement;
 
-context.strokeStyle = "#302d36";
 context.lineWidth = 2;
 
 type Point = { x: number; y: number };
 type ShapeKind = "line" | "rectangle" | "ellipse";
+type ShapeColor = "black" | "red" | "blue" | "green";
 type Shape = {
   kind: ShapeKind;
+  color: ShapeColor;
   start: Point;
   end: Point;
 };
 type EncodedLine = [number, number, number, number];
-type EncodedShape = [ShapeKind, number, number, number, number];
+type EncodedShapeV2 = [ShapeKind, number, number, number, number];
+type EncodedShapeV3 = [
+  ShapeKind,
+  ShapeColor,
+  number,
+  number,
+  number,
+  number,
+];
 type DrawingDataV1 = {
   version: 1;
   lines: EncodedLine[];
 };
 type DrawingDataV2 = {
   version: 2;
-  shapes: EncodedShape[];
+  shapes: EncodedShapeV2[];
+};
+type DrawingDataV3 = {
+  version: 3;
+  shapes: EncodedShapeV3[];
 };
 
 function isFiniteNumber(value: unknown): value is number {
@@ -64,12 +77,31 @@ function isShapeKind(value: unknown): value is ShapeKind {
   return value === "line" || value === "rectangle" || value === "ellipse";
 }
 
-function isEncodedShape(value: unknown): value is EncodedShape {
+function isShapeColor(value: unknown): value is ShapeColor {
+  return (
+    value === "black" ||
+    value === "red" ||
+    value === "blue" ||
+    value === "green"
+  );
+}
+
+function isEncodedShapeV2(value: unknown): value is EncodedShapeV2 {
   return (
     Array.isArray(value) &&
     value.length === 5 &&
     isShapeKind(value[0]) &&
     value.slice(1).every(isFiniteNumber)
+  );
+}
+
+function isEncodedShapeV3(value: unknown): value is EncodedShapeV3 {
+  return (
+    Array.isArray(value) &&
+    value.length === 6 &&
+    isShapeKind(value[0]) &&
+    isShapeColor(value[1]) &&
+    value.slice(2).every(isFiniteNumber)
   );
 }
 
@@ -101,7 +133,23 @@ function isDrawingDataV2(value: unknown): value is DrawingDataV2 {
   return (
     value.version === 2 &&
     Array.isArray(value.shapes) &&
-    value.shapes.every(isEncodedShape)
+    value.shapes.every(isEncodedShapeV2)
+  );
+}
+
+function isDrawingDataV3(value: unknown): value is DrawingDataV3 {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("version" in value) || !("shapes" in value)) {
+    return false;
+  }
+
+  return (
+    value.version === 3 &&
+    Array.isArray(value.shapes) &&
+    value.shapes.every(isEncodedShapeV3)
   );
 }
 
@@ -122,10 +170,22 @@ function loadShapesFromUrl(): Shape[] {
   try {
     const drawing: unknown = JSON.parse(drawingJson);
 
+    if (isDrawingDataV3(drawing)) {
+      return drawing.shapes.map(
+        ([kind, color, startX, startY, endX, endY]) => ({
+          kind,
+          color,
+          start: { x: startX, y: startY },
+          end: { x: endX, y: endY },
+        }),
+      );
+    }
+
     if (isDrawingDataV2(drawing)) {
       return drawing.shapes.map(
         ([kind, startX, startY, endX, endY]) => ({
           kind,
+          color: "black",
           start: { x: startX, y: startY },
           end: { x: endX, y: endY },
         }),
@@ -135,6 +195,7 @@ function loadShapesFromUrl(): Shape[] {
     if (isDrawingDataV1(drawing)) {
       return drawing.lines.map(([startX, startY, endX, endY]) => ({
         kind: "line",
+        color: "black",
         start: { x: startX, y: startY },
         end: { x: endX, y: endY },
       }));
@@ -151,6 +212,7 @@ function loadShapesFromUrl(): Shape[] {
 const shapes = loadShapesFromUrl();
 const undoStack: Shape[][] = [];
 let selectedTool: ShapeKind = "line";
+let selectedColor: ShapeColor = "black";
 let startPoint: Point | null = null;
 let cursorPoint: Point | null = null;
 let pressedCanvasPoint: Point | null = null;
@@ -196,6 +258,8 @@ function drawEllipse(start: Point, end: Point) {
 }
 
 function drawShape(shape: Shape) {
+  context.strokeStyle = shape.color;
+
   switch (shape.kind) {
     case "line":
       drawLine(shape.start, shape.end);
@@ -217,7 +281,12 @@ function render() {
   }
 
   if (startPoint !== null && cursorPoint !== null) {
-    drawShape({ kind: selectedTool, start: startPoint, end: cursorPoint });
+    drawShape({
+      kind: selectedTool,
+      color: selectedColor,
+      start: startPoint,
+      end: cursorPoint,
+    });
   }
 
   undoButton.disabled = startPoint === null && undoStack.length === 0;
@@ -230,10 +299,11 @@ function updateUrl() {
     return;
   }
 
-  const drawing: DrawingDataV2 = {
-    version: 2,
-    shapes: shapes.map<EncodedShape>((shape) => [
+  const drawing: DrawingDataV3 = {
+    version: 3,
+    shapes: shapes.map<EncodedShapeV3>((shape) => [
       shape.kind,
+      shape.color,
       Math.round(shape.start.x),
       Math.round(shape.start.y),
       Math.round(shape.end.x),
@@ -253,7 +323,12 @@ function finishShape(endPoint: Point) {
   }
 
   undoStack.push([...shapes]);
-  shapes.push({ kind: selectedTool, start: startPoint, end: endPoint });
+  shapes.push({
+    kind: selectedTool,
+    color: selectedColor,
+    start: startPoint,
+    end: endPoint,
+  });
   updateUrl();
   startPoint = null;
   cursorPoint = null;
@@ -402,6 +477,8 @@ canvas.addEventListener("pointerleave", () => {
 });
 
 const toolButtons = document.querySelectorAll<HTMLButtonElement>("[data-tool]");
+const colorButtons =
+  document.querySelectorAll<HTMLButtonElement>("[data-color]");
 
 for (const button of toolButtons) {
   button.addEventListener("click", () => {
@@ -420,6 +497,27 @@ for (const button of toolButtons) {
       toolButton.setAttribute(
         "aria-pressed",
         String(toolButton.dataset.tool === selectedTool),
+      );
+    }
+
+    render();
+  });
+}
+
+for (const button of colorButtons) {
+  button.addEventListener("click", () => {
+    const color = button.dataset.color;
+
+    if (!isShapeColor(color)) {
+      return;
+    }
+
+    selectedColor = color;
+
+    for (const colorButton of colorButtons) {
+      colorButton.setAttribute(
+        "aria-pressed",
+        String(colorButton.dataset.color === selectedColor),
       );
     }
 
