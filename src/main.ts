@@ -25,6 +25,8 @@ if (!(canvasElement instanceof HTMLCanvasElement)) {
 
 const canvas = canvasElement;
 const drawingContext = canvas.getContext("2d");
+const sendToBackButtonElement = document.querySelector("#send-to-back");
+const bringToFrontButtonElement = document.querySelector("#bring-to-front");
 const undoButtonElement = document.querySelector("#undo");
 const clearButtonElement = document.querySelector("#clear");
 const textEditorElement = document.querySelector("#text-editor");
@@ -37,6 +39,14 @@ if (!(undoButtonElement instanceof HTMLButtonElement)) {
   throw new Error("Undo button was not found");
 }
 
+if (!(sendToBackButtonElement instanceof HTMLButtonElement)) {
+  throw new Error("Send to back button was not found");
+}
+
+if (!(bringToFrontButtonElement instanceof HTMLButtonElement)) {
+  throw new Error("Bring to front button was not found");
+}
+
 if (!(clearButtonElement instanceof HTMLButtonElement)) {
   throw new Error("Clear button was not found");
 }
@@ -46,6 +56,8 @@ if (!(textEditorElement instanceof HTMLInputElement)) {
 }
 
 const context = drawingContext;
+const sendToBackButton = sendToBackButtonElement;
+const bringToFrontButton = bringToFrontButtonElement;
 const undoButton = undoButtonElement;
 const clearButton = clearButtonElement;
 const textEditor = textEditorElement;
@@ -201,7 +213,13 @@ function render() {
   }
 
   const hasDraft = startPoint !== null || textPosition !== null;
+  const selectedShapeExists =
+    selectedShapeIndex !== null && shapes[selectedShapeIndex] !== undefined;
 
+  sendToBackButton.disabled =
+    !selectedShapeExists || selectedShapeIndex === 0;
+  bringToFrontButton.disabled =
+    !selectedShapeExists || selectedShapeIndex === shapes.length - 1;
   undoButton.disabled = !hasDraft && undoStack.length === 0;
   clearButton.disabled = !hasDraft && shapes.length === 0;
 }
@@ -336,6 +354,47 @@ function clearDrawing() {
     saveShapesToUrl(shapes);
   }
 
+  render();
+}
+
+function sendSelectedShapeToBack() {
+  if (selectedShapeIndex === null || selectedShapeIndex === 0) {
+    return;
+  }
+
+  const selectedShape = shapes[selectedShapeIndex];
+
+  if (selectedShape === undefined) {
+    return;
+  }
+
+  undoStack.push([...shapes]);
+  shapes.splice(selectedShapeIndex, 1);
+  shapes.unshift(selectedShape);
+  selectedShapeIndex = 0;
+  saveShapesToUrl(shapes);
+  render();
+}
+
+function bringSelectedShapeToFront() {
+  if (
+    selectedShapeIndex === null ||
+    selectedShapeIndex === shapes.length - 1
+  ) {
+    return;
+  }
+
+  const selectedShape = shapes[selectedShapeIndex];
+
+  if (selectedShape === undefined) {
+    return;
+  }
+
+  undoStack.push([...shapes]);
+  shapes.splice(selectedShapeIndex, 1);
+  shapes.push(selectedShape);
+  selectedShapeIndex = shapes.length - 1;
+  saveShapesToUrl(shapes);
   render();
 }
 
@@ -588,6 +647,8 @@ for (const button of colorButtons) {
   });
 }
 
+sendToBackButton.addEventListener("click", sendSelectedShapeToBack);
+bringToFrontButton.addEventListener("click", bringSelectedShapeToFront);
 undoButton.addEventListener("click", undo);
 clearButton.addEventListener("click", clearDrawing);
 

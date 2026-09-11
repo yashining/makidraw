@@ -115,10 +115,16 @@ button:disabled {
   opacity: 0.45;
 }
 
+.layer-controls,
 .action-controls {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.375rem;
+}
+
+.layer-controls {
+  padding-top: 0.5rem;
+  border-top: 1px solid #d8d3dd;
 }
 
 .canvas-container {
