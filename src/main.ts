@@ -8,7 +8,11 @@ import {
   type ShapeColor,
   type ShapeKind,
 } from "./model";
-import { findShapeIndexAtPoint, getShapeBounds } from "./shape-geometry";
+import {
+  findShapeIndexAtPoint,
+  getShapeBounds,
+  translateShape,
+} from "./shape-geometry";
 import "./style.css";
 
 type ToolKind = ShapeKind | "select";
@@ -60,6 +64,8 @@ let pressedClientPoint: Point | null = null;
 let activePointerId: number | null = null;
 let isDragging = false;
 let textPosition: Point | null = null;
+let movingShapeIndex: number | null = null;
+let movingShapePreview: Shape | null = null;
 const dragThreshold = 4;
 const geometricShapeOpacity = 0.6;
 const textOpacity = 0.8;
@@ -161,12 +167,20 @@ function drawSelection(shape: Shape) {
 function render() {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (const shape of shapes) {
-    drawShape(shape);
+  for (const [index, shape] of shapes.entries()) {
+    const shapeToDraw =
+      index === movingShapeIndex && movingShapePreview !== null
+        ? movingShapePreview
+        : shape;
+
+    drawShape(shapeToDraw);
   }
 
   if (selectedShapeIndex !== null) {
-    const selectedShape = shapes[selectedShapeIndex];
+    const selectedShape =
+      selectedShapeIndex === movingShapeIndex && movingShapePreview !== null
+        ? movingShapePreview
+        : shapes[selectedShapeIndex];
 
     if (selectedShape !== undefined) {
       drawSelection(selectedShape);
@@ -274,6 +288,8 @@ function resetPointerGesture() {
   pressedCanvasPoint = null;
   pressedClientPoint = null;
   isDragging = false;
+  movingShapeIndex = null;
+  movingShapePreview = null;
 }
 
 function undo() {
@@ -288,6 +304,7 @@ function undo() {
     const previousShapes = undoStack.pop();
 
     if (previousShapes === undefined) {
+      render();
       return;
     }
 
@@ -331,11 +348,22 @@ canvas.addEventListener("pointerdown", (event) => {
   }
 
   if (selectedTool === "select") {
+    const point = getCanvasPoint(event);
     selectedShapeIndex = findShapeIndexAtPoint(
       shapes,
-      getCanvasPoint(event),
+      point,
       measureText,
     );
+
+    if (selectedShapeIndex !== null) {
+      movingShapeIndex = selectedShapeIndex;
+      activePointerId = event.pointerId;
+      pressedCanvasPoint = point;
+      pressedClientPoint = { x: event.clientX, y: event.clientY };
+      isDragging = false;
+      canvas.setPointerCapture(event.pointerId);
+    }
+
     render();
     return;
   }
@@ -362,6 +390,34 @@ canvas.addEventListener("pointermove", (event) => {
   }
 
   const point = getCanvasPoint(event);
+
+  if (
+    movingShapeIndex !== null &&
+    activePointerId === event.pointerId &&
+    pressedCanvasPoint !== null &&
+    pressedClientPoint !== null
+  ) {
+    if (
+      isDragging ||
+      Math.hypot(
+        event.clientX - pressedClientPoint.x,
+        event.clientY - pressedClientPoint.y,
+      ) >= dragThreshold
+    ) {
+      const originalShape = shapes[movingShapeIndex];
+
+      if (originalShape !== undefined) {
+        isDragging = true;
+        movingShapePreview = translateShape(originalShape, {
+          x: point.x - pressedCanvasPoint.x,
+          y: point.y - pressedCanvasPoint.y,
+        });
+        render();
+      }
+    }
+
+    return;
+  }
 
   if (
     activePointerId === event.pointerId &&
@@ -391,6 +447,30 @@ canvas.addEventListener("pointerup", (event) => {
   }
 
   const point = getCanvasPoint(event);
+
+  if (movingShapeIndex !== null) {
+    const movedShapeIndex = movingShapeIndex;
+    const originalShape = shapes[movedShapeIndex];
+    const movedShape =
+      isDragging && pressedCanvasPoint !== null && originalShape !== undefined
+        ? translateShape(originalShape, {
+            x: point.x - pressedCanvasPoint.x,
+            y: point.y - pressedCanvasPoint.y,
+          })
+        : null;
+
+    resetPointerGesture();
+
+    if (movedShape !== null) {
+      undoStack.push([...shapes]);
+      shapes[movedShapeIndex] = movedShape;
+      saveShapesToUrl(shapes);
+    }
+
+    render();
+    return;
+  }
+
   const completedDrag = isDragging;
   resetPointerGesture();
 

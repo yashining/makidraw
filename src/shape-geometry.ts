@@ -16,6 +16,28 @@ type MeasureText = (text: string) => TextMeasurement;
 
 const hitTolerance = 8;
 
+function translatePoint(point: Point, offset: Point): Point {
+  return {
+    x: point.x + offset.x,
+    y: point.y + offset.y,
+  };
+}
+
+export function translateShape(shape: Shape, offset: Point): Shape {
+  if (shape.kind === "text") {
+    return {
+      ...shape,
+      position: translatePoint(shape.position, offset),
+    };
+  }
+
+  return {
+    ...shape,
+    start: translatePoint(shape.start, offset),
+    end: translatePoint(shape.end, offset),
+  };
+}
+
 export function getShapeBounds(
   shape: Shape,
   measureText: MeasureText,
