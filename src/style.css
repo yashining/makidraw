@@ -136,6 +136,10 @@ canvas {
   outline: 1px solid #d8d3dd;
 }
 
+canvas.selection-active {
+  cursor: default;
+}
+
 .text-editor {
   position: absolute;
   z-index: 1;

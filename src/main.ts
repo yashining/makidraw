@@ -1,5 +1,6 @@
 import { loadShapesFromUrl, saveShapesToUrl } from "./drawing-url";
 import {
+  isGeometricShapeKind,
   isShapeColor,
   isShapeKind,
   type Point,
@@ -7,7 +8,10 @@ import {
   type ShapeColor,
   type ShapeKind,
 } from "./model";
+import { findShapeIndexAtPoint, getShapeBounds } from "./shape-geometry";
 import "./style.css";
+
+type ToolKind = ShapeKind | "select";
 
 const canvasElement = document.querySelector("#drawing");
 
@@ -46,8 +50,9 @@ context.lineWidth = 2;
 
 const shapes = loadShapesFromUrl();
 const undoStack: Shape[][] = [];
-let selectedTool: ShapeKind = "line";
+let selectedTool: ToolKind = "line";
 let selectedColor: ShapeColor = "black";
+let selectedShapeIndex: number | null = null;
 let startPoint: Point | null = null;
 let cursorPoint: Point | null = null;
 let pressedCanvasPoint: Point | null = null;
@@ -59,6 +64,11 @@ const dragThreshold = 4;
 const geometricShapeOpacity = 0.6;
 const textOpacity = 0.8;
 const textFontSize = 20;
+const selectionPadding = 6;
+
+function isToolKind(value: unknown): value is ToolKind {
+  return value === "select" || isShapeKind(value);
+}
 
 function getCanvasPoint(event: MouseEvent): Point {
   const bounds = canvas.getBoundingClientRect();
@@ -122,6 +132,32 @@ function drawShape(shape: Shape) {
   context.restore();
 }
 
+function measureText(text: string) {
+  context.save();
+  context.font = `${textFontSize}px system-ui`;
+  const width = context.measureText(text).width;
+  context.restore();
+
+  return { width, height: textFontSize };
+}
+
+function drawSelection(shape: Shape) {
+  const bounds = getShapeBounds(shape, measureText);
+
+  context.save();
+  context.globalAlpha = 1;
+  context.lineWidth = 1;
+  context.strokeStyle = "#2563eb";
+  context.setLineDash([5, 4]);
+  context.strokeRect(
+    bounds.left - selectionPadding,
+    bounds.top - selectionPadding,
+    bounds.right - bounds.left + selectionPadding * 2,
+    bounds.bottom - bounds.top + selectionPadding * 2,
+  );
+  context.restore();
+}
+
 function render() {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -129,8 +165,16 @@ function render() {
     drawShape(shape);
   }
 
+  if (selectedShapeIndex !== null) {
+    const selectedShape = shapes[selectedShapeIndex];
+
+    if (selectedShape !== undefined) {
+      drawSelection(selectedShape);
+    }
+  }
+
   if (
-    selectedTool !== "text" &&
+    isGeometricShapeKind(selectedTool) &&
     startPoint !== null &&
     cursorPoint !== null
   ) {
@@ -149,7 +193,7 @@ function render() {
 }
 
 function finishShape(endPoint: Point) {
-  if (startPoint === null || selectedTool === "text") {
+  if (startPoint === null || !isGeometricShapeKind(selectedTool)) {
     return;
   }
 
@@ -249,6 +293,7 @@ function undo() {
 
     shapes.length = 0;
     shapes.push(...previousShapes);
+    selectedShapeIndex = null;
     saveShapesToUrl(shapes);
   }
 
@@ -270,6 +315,7 @@ function clearDrawing() {
   if (shapes.length > 0) {
     undoStack.push([...shapes]);
     shapes.length = 0;
+    selectedShapeIndex = null;
     saveShapesToUrl(shapes);
   }
 
@@ -278,10 +324,23 @@ function clearDrawing() {
 
 canvas.addEventListener("pointerdown", (event) => {
   if (
-    selectedTool === "text" ||
     event.button !== 0 ||
     activePointerId !== null
   ) {
+    return;
+  }
+
+  if (selectedTool === "select") {
+    selectedShapeIndex = findShapeIndexAtPoint(
+      shapes,
+      getCanvasPoint(event),
+      measureText,
+    );
+    render();
+    return;
+  }
+
+  if (selectedTool === "text") {
     return;
   }
 
@@ -392,11 +451,17 @@ const toolButtons = document.querySelectorAll<HTMLButtonElement>("[data-tool]");
 const colorButtons =
   document.querySelectorAll<HTMLButtonElement>("[data-color]");
 
-function selectTool(tool: ShapeKind) {
+function selectTool(tool: ToolKind) {
   resetPointerGesture();
   selectedTool = tool;
   startPoint = null;
   cursorPoint = null;
+
+  if (tool !== "select") {
+    selectedShapeIndex = null;
+  }
+
+  canvas.classList.toggle("selection-active", tool === "select");
 
   for (const toolButton of toolButtons) {
     toolButton.setAttribute(
@@ -411,7 +476,7 @@ function selectTool(tool: ShapeKind) {
 for (const button of toolButtons) {
   button.addEventListener("click", () => {
     const tool = button.dataset.tool;
-    if (!isShapeKind(tool)) {
+    if (!isToolKind(tool)) {
       return;
     }
     selectTool(tool);
@@ -446,7 +511,8 @@ for (const button of colorButtons) {
 undoButton.addEventListener("click", undo);
 clearButton.addEventListener("click", clearDrawing);
 
-const toolShortcuts: Partial<Record<string, ShapeKind>> = {
+const toolShortcuts: Partial<Record<string, ToolKind>> = {
+  v: "select",
   l: "line",
   r: "rectangle",
   e: "ellipse",
