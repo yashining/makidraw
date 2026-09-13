@@ -1,5 +1,10 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "/makidraw/",
+  base: "/",
+  server: {
+    proxy: {
+      "/api": "http://localhost:3000"
+    }
+  }
 });
