@@ -15,6 +15,24 @@ app.get("/api/health", (_request, response) => {
 });
 
 app.post("/api/drawing/aiedit", (request, response) => {
+  const accessToken = process.env.AI_ACCESS_TOKEN;
+
+  if (!accessToken) {
+    const errorResponse: ApiErrorResponse = {
+      error: "AI editing is not configured.",
+    };
+    response.status(503).json(errorResponse);
+    return;
+  }
+
+  if (request.get("Authorization") !== `Bearer ${accessToken}`) {
+    const errorResponse: ApiErrorResponse = {
+      error: "The access token is invalid.",
+    };
+    response.status(401).json(errorResponse);
+    return;
+  }
+
   const body: unknown = request.body;
   const validation = validateAiEditRequest(body);
 

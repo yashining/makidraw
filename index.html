@@ -214,6 +214,31 @@
         </section>
       </div>
     </main>
+    <dialog
+      id="ai-access-dialog"
+      class="ai-access-dialog"
+      aria-labelledby="ai-access-title"
+      aria-describedby="ai-access-message"
+    >
+      <form id="ai-access-form" class="ai-access-form">
+        <h2 id="ai-access-title">Unlock AI editing</h2>
+        <p id="ai-access-message">
+          Enter the access token for this deployment. It will be saved for this
+          browser tab.
+        </p>
+        <label for="ai-access-token">Access token</label>
+        <input
+          id="ai-access-token"
+          type="password"
+          autocomplete="current-password"
+          required
+        />
+        <div class="ai-access-actions">
+          <button id="ai-access-cancel" type="button">Cancel</button>
+          <button type="submit">Unlock</button>
+        </div>
+      </form>
+    </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

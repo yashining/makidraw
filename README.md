@@ -22,7 +22,7 @@ npm install
 Run the backend in one terminal:
 
 ```sh
-npm run dev:server
+AI_ACCESS_TOKEN=your-secret-token npm run dev:server
 ```
 
 Run the frontend in another terminal:
@@ -33,7 +33,8 @@ npm run dev
 
 Open the URL printed by Vite. Vite updates the page when frontend files change
 and proxies `/api` requests to the Express server. `tsx watch` restarts Express
-when backend files change.
+when backend files change. On the first AI edit, enter the same access token in
+the browser; MakiDraw saves it in `sessionStorage` for that browser tab.
 
 ## API
 
@@ -75,7 +76,8 @@ which serves both the app and API at <http://localhost:3000> by default.
 Railway is the primary deployment. It builds the app with `npm run build` and
 starts it with `npm start`. The server listens on Railway's `PORT` environment
 variable and on `0.0.0.0`. Pushes to the connected `main` branch trigger new
-deployments.
+deployments. The `AI_ACCESS_TOKEN` Railway variable protects the AI edit API and
+must not use the `VITE_` prefix, which would expose it to frontend code.
 
 GitHub Pages remains available as a frontend-only deployment at
 <https://yashining.github.io/makidraw/>. Its GitHub Actions workflow uses

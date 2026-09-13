@@ -9,12 +9,19 @@ type AiEditorOptions = {
   getScene: () => SceneV1;
 };
 
+const accessTokenStorageKey = "makidraw.aiAccessToken";
+
 export function initializeAiEditor({ getScene }: AiEditorOptions) {
   const formElement = document.querySelector("#ai-edit-form");
   const promptElement = document.querySelector("#ai-edit-prompt");
   const submitElement = document.querySelector("#ai-edit-submit");
   const statusElement = document.querySelector("#ai-edit-status");
   const historyElement = document.querySelector("#prompt-history");
+  const accessDialogElement = document.querySelector("#ai-access-dialog");
+  const accessFormElement = document.querySelector("#ai-access-form");
+  const accessTokenElement = document.querySelector("#ai-access-token");
+  const accessMessageElement = document.querySelector("#ai-access-message");
+  const accessCancelElement = document.querySelector("#ai-access-cancel");
 
   if (!(formElement instanceof HTMLFormElement)) {
     throw new Error("AI edit form was not found");
@@ -36,12 +43,48 @@ export function initializeAiEditor({ getScene }: AiEditorOptions) {
     throw new Error("AI prompt history was not found");
   }
 
+  if (!(accessDialogElement instanceof HTMLDialogElement)) {
+    throw new Error("AI access dialog was not found");
+  }
+
+  if (!(accessFormElement instanceof HTMLFormElement)) {
+    throw new Error("AI access form was not found");
+  }
+
+  if (!(accessTokenElement instanceof HTMLInputElement)) {
+    throw new Error("AI access token input was not found");
+  }
+
+  if (!(accessMessageElement instanceof HTMLParagraphElement)) {
+    throw new Error("AI access message was not found");
+  }
+
+  if (!(accessCancelElement instanceof HTMLButtonElement)) {
+    throw new Error("AI access cancel button was not found");
+  }
+
   const form = formElement;
   const promptInput = promptElement;
   const submitButton = submitElement;
   const status = statusElement;
   const historyList = historyElement;
+  const accessDialog = accessDialogElement;
+  const accessForm = accessFormElement;
+  const accessTokenInput = accessTokenElement;
+  const accessMessage = accessMessageElement;
+  const accessCancelButton = accessCancelElement;
   const promptHistory: string[] = [];
+
+  function openAccessDialog(message: string) {
+    accessMessage.textContent = message;
+    accessTokenInput.value = "";
+
+    if (!accessDialog.open) {
+      accessDialog.showModal();
+    }
+
+    accessTokenInput.focus();
+  }
 
   function setBusy(isBusy: boolean) {
     promptInput.disabled = isBusy;
@@ -84,12 +127,46 @@ export function initializeAiEditor({ getScene }: AiEditorOptions) {
     }
   });
 
+  accessTokenInput.addEventListener("keydown", (event) => {
+    event.stopPropagation();
+  });
+
+  accessForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const accessToken = accessTokenInput.value.trim();
+
+    if (accessToken.length === 0) {
+      accessTokenInput.focus();
+      return;
+    }
+
+    sessionStorage.setItem(accessTokenStorageKey, accessToken);
+    accessDialog.close();
+    form.requestSubmit();
+  });
+
+  accessCancelButton.addEventListener("click", () => {
+    accessDialog.close();
+    status.textContent = "AI edit cancelled";
+    promptInput.focus();
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const prompt = promptInput.value.trim();
 
     if (prompt.length === 0) {
       promptInput.focus();
+      return;
+    }
+
+    const accessToken = sessionStorage.getItem(accessTokenStorageKey)?.trim();
+
+    if (!accessToken) {
+      status.textContent = "Access token required";
+      openAccessDialog(
+        "Enter the access token for this deployment. It will be saved for this browser tab.",
+      );
       return;
     }
 
@@ -104,10 +181,20 @@ export function initializeAiEditor({ getScene }: AiEditorOptions) {
     try {
       const response = await fetch("/api/drawing/aiedit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify(requestBody),
       });
       const responseBody: unknown = await response.json();
+
+      if (response.status === 401) {
+        sessionStorage.removeItem(accessTokenStorageKey);
+        status.textContent = "Access token rejected";
+        openAccessDialog("That access token was rejected. Please try again.");
+        return;
+      }
 
       if (!response.ok) {
         const message = isApiErrorResponse(responseBody)
