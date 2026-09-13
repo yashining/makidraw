@@ -10,7 +10,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",
     "build:pages": "tsc --noEmit && vite build --base=/makidraw/",
-    "start": "node server-dist/index.js",
+    "start": "node server-dist/server/index.js",
     "preview": "vite preview"
   },
   "devDependencies": {

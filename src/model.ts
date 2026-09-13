@@ -40,3 +40,33 @@ export function isShapeColor(value: unknown): value is ShapeColor {
     value === "green"
   );
 }
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function isPoint(value: unknown): value is Point {
+  return (
+    isObject(value) &&
+    typeof value.x === "number" &&
+    Number.isFinite(value.x) &&
+    typeof value.y === "number" &&
+    Number.isFinite(value.y)
+  );
+}
+
+export function isShape(value: unknown): value is Shape {
+  if (
+    !isObject(value) ||
+    !isShapeKind(value.kind) ||
+    !isShapeColor(value.color)
+  ) {
+    return false;
+  }
+
+  if (value.kind === "text") {
+    return isPoint(value.position) && typeof value.text === "string";
+  }
+
+  return isPoint(value.start) && isPoint(value.end);
+}
