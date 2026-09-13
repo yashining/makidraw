@@ -1,5 +1,11 @@
 import { loadShapesFromUrl, saveShapesToUrl } from "./drawing-url";
 import {
+  drawSelection,
+  drawShape,
+  measureShapeText,
+  textFontSize,
+} from "./canvas-renderer";
+import {
   isGeometricShapeKind,
   isShapeColor,
   isShapeKind,
@@ -10,7 +16,6 @@ import {
 } from "./model";
 import {
   findShapeIndexAtPoint,
-  getShapeBounds,
   translateShape,
 } from "./shape-geometry";
 import "./style.css";
@@ -62,8 +67,6 @@ const undoButton = undoButtonElement;
 const clearButton = clearButtonElement;
 const textEditor = textEditorElement;
 
-context.lineWidth = 2;
-
 const shapes = loadShapesFromUrl();
 const undoStack: Shape[][] = [];
 let selectedTool: ToolKind = "line";
@@ -79,10 +82,6 @@ let textPosition: Point | null = null;
 let movingShapeIndex: number | null = null;
 let movingShapePreview: Shape | null = null;
 const dragThreshold = 4;
-const geometricShapeOpacity = 0.6;
-const textOpacity = 0.8;
-const textFontSize = 20;
-const selectionPadding = 6;
 
 function isToolKind(value: unknown): value is ToolKind {
   return value === "select" || isShapeKind(value);
@@ -97,83 +96,8 @@ function getCanvasPoint(event: MouseEvent): Point {
   };
 }
 
-function drawLine(start: Point, end: Point) {
-  context.beginPath();
-  context.moveTo(start.x, start.y);
-  context.lineTo(end.x, end.y);
-  context.stroke();
-}
-
-function drawRectangle(start: Point, end: Point) {
-  const left = Math.min(start.x, end.x);
-  const top = Math.min(start.y, end.y);
-  const width = Math.abs(end.x - start.x);
-  const height = Math.abs(end.y - start.y);
-
-  context.strokeRect(left, top, width, height);
-}
-
-function drawEllipse(start: Point, end: Point) {
-  const centerX = (start.x + end.x) / 2;
-  const centerY = (start.y + end.y) / 2;
-  const radiusX = Math.abs(end.x - start.x) / 2;
-  const radiusY = Math.abs(end.y - start.y) / 2;
-
-  context.beginPath();
-  context.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-  context.stroke();
-}
-
-function drawShape(shape: Shape) {
-  context.save();
-  context.globalAlpha = geometricShapeOpacity;
-  context.strokeStyle = shape.color;
-  context.fillStyle = shape.color;
-
-  switch (shape.kind) {
-    case "line":
-      drawLine(shape.start, shape.end);
-      break;
-    case "rectangle":
-      drawRectangle(shape.start, shape.end);
-      break;
-    case "ellipse":
-      drawEllipse(shape.start, shape.end);
-      break;
-    case "text":
-      context.globalAlpha = textOpacity;
-      context.font = `${textFontSize}px system-ui`;
-      context.textBaseline = "top";
-      context.fillText(shape.text, shape.position.x, shape.position.y);
-      break;
-  }
-  context.restore();
-}
-
 function measureText(text: string) {
-  context.save();
-  context.font = `${textFontSize}px system-ui`;
-  const width = context.measureText(text).width;
-  context.restore();
-
-  return { width, height: textFontSize };
-}
-
-function drawSelection(shape: Shape) {
-  const bounds = getShapeBounds(shape, measureText);
-
-  context.save();
-  context.globalAlpha = 1;
-  context.lineWidth = 1;
-  context.strokeStyle = "#2563eb";
-  context.setLineDash([5, 4]);
-  context.strokeRect(
-    bounds.left - selectionPadding,
-    bounds.top - selectionPadding,
-    bounds.right - bounds.left + selectionPadding * 2,
-    bounds.bottom - bounds.top + selectionPadding * 2,
-  );
-  context.restore();
+  return measureShapeText(context, text);
 }
 
 function render() {
@@ -185,7 +109,7 @@ function render() {
         ? movingShapePreview
         : shape;
 
-    drawShape(shapeToDraw);
+    drawShape(context, shapeToDraw);
   }
 
   if (selectedShapeIndex !== null) {
@@ -195,7 +119,7 @@ function render() {
         : shapes[selectedShapeIndex];
 
     if (selectedShape !== undefined) {
-      drawSelection(selectedShape);
+      drawSelection(context, selectedShape);
     }
   }
 
@@ -204,7 +128,7 @@ function render() {
     startPoint !== null &&
     cursorPoint !== null
   ) {
-    drawShape({
+    drawShape(context, {
       kind: selectedTool,
       color: selectedColor,
       start: startPoint,

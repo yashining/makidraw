@@ -31,6 +31,7 @@ Open the local URL printed in the terminal. Editing a file updates the page.
 
 - `index.html` defines the page content and loads the TypeScript entry point.
 - `src/main.ts` coordinates drawing state, rendering, and browser interactions.
+- `src/canvas-renderer.ts` draws shapes and selection feedback on the canvas.
 - `src/model.ts` defines the drawing concepts shared by the app.
 - `src/shape-geometry.ts` handles selecting and moving shapes.
 - `src/drawing-url.ts` validates old URL formats and saves the current format.
