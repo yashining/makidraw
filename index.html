@@ -107,27 +107,61 @@
         </div>
         <div class="layer-controls" role="group" aria-label="Layer order">
           <button
+            class="square-button icon-button"
             id="send-to-back"
             type="button"
+            aria-label="Send selected shape to back"
             title="Send selected shape to back"
             disabled
-            disabled
           >
-            To back
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="9" y="4" width="10" height="10" rx="2" />
+              <path d="M5 8v11m0 0-3-3m3 3 3-3" />
+              <path d="M9 18h6a2 2 0 0 0 2-2" />
+            </svg>
           </button>
           <button
+            class="square-button icon-button"
             id="bring-to-front"
             type="button"
+            aria-label="Bring selected shape to front"
             title="Bring selected shape to front"
             disabled
-            disabled
           >
-            To front
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="5" y="10" width="10" height="10" rx="2" />
+              <path d="M19 16V5m0 0-3 3m3-3 3 3" />
+              <path d="M15 6H9a2 2 0 0 0-2 2" />
+            </svg>
           </button>
         </div>
-        <div class="action-controls">
-          <button id="undo" type="button" disabled>Undo</button>
-          <button id="clear" type="button" disabled>Clear</button>
+        <div class="action-controls" role="group" aria-label="Drawing actions">
+          <button
+            class="square-button icon-button"
+            id="undo"
+            type="button"
+            aria-label="Undo"
+            title="Undo (Ctrl+Z)"
+            disabled
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m8 7-4 4 4 4" />
+              <path d="M5 11h8a6 6 0 0 1 6 6" />
+            </svg>
+          </button>
+          <button
+            class="square-button icon-button"
+            id="clear"
+            type="button"
+            aria-label="Clear drawing"
+            title="Clear drawing"
+            disabled
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M9 4h6l1 3H8l1-3Z" />
+              <path d="m7 7 1 13h8l1-13M10 11v5M14 11v5" />
+            </svg>
+          </button>
         </div>
       </div>
       <div class="canvas-container">
