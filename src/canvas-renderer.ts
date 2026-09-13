@@ -7,19 +7,65 @@ import {
 import type { Point, Shape } from "./model";
 import { getShapeBounds } from "./shape-geometry";
 
-const geometricShapeOpacity = 0.6;
-const textOpacity = 0.8;
+const primaryStrokeOpacity = 0.62;
+const secondaryStrokeOpacity = 0.22;
+const primaryStrokeWidth = 2.2;
+const secondaryStrokeWidth = 1.2;
+const textOpacity = 0.88;
 const selectionPadding = 6;
+
+function strokePath(
+  context: CanvasRenderingContext2D,
+  opacity: number,
+  lineWidth: number,
+  createPath: () => void,
+) {
+  context.save();
+  context.globalAlpha = opacity;
+  context.lineWidth = lineWidth;
+  context.beginPath();
+  createPath();
+  context.stroke();
+  context.restore();
+}
 
 function drawLine(
   context: CanvasRenderingContext2D,
   start: Point,
   end: Point,
 ) {
-  context.beginPath();
-  context.moveTo(start.x, start.y);
-  context.lineTo(end.x, end.y);
-  context.stroke();
+  const differenceX = end.x - start.x;
+  const differenceY = end.y - start.y;
+  const length = Math.hypot(differenceX, differenceY);
+  const normalX = length === 0 ? 0 : -differenceY / length;
+  const normalY = length === 0 ? 0 : differenceX / length;
+  const midpointX = (start.x + end.x) / 2;
+  const midpointY = (start.y + end.y) / 2;
+  const bend = Math.min(1.8, length * 0.015);
+  const direction = Math.sin(differenceX * 0.12 + differenceY * 0.19) >= 0 ? 1 : -1;
+
+  strokePath(context, primaryStrokeOpacity, primaryStrokeWidth, () => {
+    context.moveTo(start.x, start.y);
+    context.quadraticCurveTo(
+      midpointX + normalX * bend * direction,
+      midpointY + normalY * bend * direction,
+      end.x,
+      end.y,
+    );
+  });
+
+  strokePath(context, secondaryStrokeOpacity, secondaryStrokeWidth, () => {
+    context.moveTo(
+      start.x + normalX * 0.45 * direction,
+      start.y + normalY * 0.45 * direction,
+    );
+    context.quadraticCurveTo(
+      midpointX - normalX * bend * 0.55 * direction,
+      midpointY - normalY * bend * 0.55 * direction,
+      end.x - normalX * 0.35 * direction,
+      end.y - normalY * 0.35 * direction,
+    );
+  });
 }
 
 function drawRectangle(
@@ -29,10 +75,27 @@ function drawRectangle(
 ) {
   const left = Math.min(start.x, end.x);
   const top = Math.min(start.y, end.y);
-  const width = Math.abs(end.x - start.x);
-  const height = Math.abs(end.y - start.y);
+  const right = Math.max(start.x, end.x);
+  const bottom = Math.max(start.y, end.y);
+  const width = right - left;
+  const height = bottom - top;
+  const variation = Math.min(1.1, width / 12, height / 12);
 
-  context.strokeRect(left, top, width, height);
+  strokePath(context, primaryStrokeOpacity, primaryStrokeWidth, () => {
+    context.moveTo(left + variation * 0.35, top);
+    context.lineTo(right, top + variation * 0.25);
+    context.lineTo(right - variation * 0.2, bottom);
+    context.lineTo(left, bottom - variation * 0.3);
+    context.closePath();
+  });
+
+  strokePath(context, secondaryStrokeOpacity, secondaryStrokeWidth, () => {
+    context.moveTo(left, top + variation * 0.4);
+    context.lineTo(right - variation * 0.3, top);
+    context.lineTo(right, bottom - variation * 0.35);
+    context.lineTo(left + variation * 0.25, bottom);
+    context.closePath();
+  });
 }
 
 function drawEllipse(
@@ -44,16 +107,38 @@ function drawEllipse(
   const centerY = (start.y + end.y) / 2;
   const radiusX = Math.abs(end.x - start.x) / 2;
   const radiusY = Math.abs(end.y - start.y) / 2;
+  const variation = Math.min(0.75, radiusX * 0.08, radiusY * 0.08);
+  const direction = Math.sin(radiusX * 0.17 + radiusY * 0.11) >= 0 ? 1 : -1;
 
-  context.beginPath();
-  context.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-  context.stroke();
+  strokePath(context, primaryStrokeOpacity, primaryStrokeWidth, () => {
+    context.ellipse(
+      centerX + variation * 0.15 * direction,
+      centerY - variation * 0.1 * direction,
+      radiusX,
+      radiusY,
+      0.006 * direction,
+      0,
+      Math.PI * 2,
+    );
+  });
+
+  strokePath(context, secondaryStrokeOpacity, secondaryStrokeWidth, () => {
+    context.ellipse(
+      centerX - variation * 0.35 * direction,
+      centerY + variation * 0.25 * direction,
+      radiusX + variation * 0.25,
+      Math.max(0, radiusY - variation * 0.2),
+      -0.008 * direction,
+      0,
+      Math.PI * 2,
+    );
+  });
 }
 
 export function drawShape(context: CanvasRenderingContext2D, shape: Shape) {
   context.save();
-  context.globalAlpha = geometricShapeOpacity;
-  context.lineWidth = 2;
+  context.lineCap = "round";
+  context.lineJoin = "round";
   context.strokeStyle = drawingColors[shape.color];
   context.fillStyle = drawingColors[shape.color];
 

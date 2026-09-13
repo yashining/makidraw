@@ -7,6 +7,7 @@ position, type a line, and press Enter. Choose black, red, blue, or green for
 the stroke or text. The unfinished geometric shape follows the pointer. Use the
 Select tool to select and move a shape, or send it behind or in front of the
 other shapes. Text uses the bundled open-source Kalam handwriting font.
+Geometric shapes use subtle deterministic double strokes for a sketched look.
 Completed shapes are encoded in the URL, so refreshing or sharing the full URL
 recreates the drawing. Older version 1 and version 2 links still load with black
 shapes, and version 3 links keep their colors. New links use version 4 to store
