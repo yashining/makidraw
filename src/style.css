@@ -113,6 +113,8 @@ button[data-tool][aria-pressed="true"] {
 }
 
 .color-button {
+  --swatch-color: #3d3947;
+
   position: relative;
   background: #fffefa;
 }
@@ -124,22 +126,6 @@ button[data-tool][aria-pressed="true"] {
   background: var(--swatch-color);
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
   content: "";
-}
-
-button[data-color="black"] {
-  --swatch-color: black;
-}
-
-button[data-color="red"] {
-  --swatch-color: red;
-}
-
-button[data-color="blue"] {
-  --swatch-color: blue;
-}
-
-button[data-color="green"] {
-  --swatch-color: green;
 }
 
 button[data-color][aria-pressed="true"] {

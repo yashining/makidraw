@@ -5,7 +5,7 @@ import {
   drawShape,
   measureShapeText,
 } from "./canvas-renderer";
-import { drawingTextFontSize } from "./drawing-style";
+import { drawingColors, drawingTextFontSize } from "./drawing-style";
 import {
   isGeometricShapeKind,
   isShapeColor,
@@ -213,7 +213,7 @@ function openTextEditor(position: Point) {
   textEditor.style.left = `${position.x * scaleX}px`;
   textEditor.style.top = `${position.y * scaleY}px`;
   textEditor.style.fontSize = `${drawingTextFontSize * scaleY}px`;
-  textEditor.style.color = selectedColor;
+  textEditor.style.color = drawingColors[selectedColor];
   textEditor.hidden = false;
   textEditor.focus();
   render();
@@ -561,13 +561,14 @@ function selectColor(color: ShapeColor) {
 }
 
 for (const button of colorButtons) {
+  const color = button.dataset.color;
+
+  if (!isShapeColor(color)) {
+    continue;
+  }
+
+  button.style.setProperty("--swatch-color", drawingColors[color]);
   button.addEventListener("click", () => {
-    const color = button.dataset.color;
-
-    if (!isShapeColor(color)) {
-      return;
-    }
-
     selectColor(color);
   });
 }

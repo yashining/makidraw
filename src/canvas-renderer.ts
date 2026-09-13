@@ -1,6 +1,8 @@
 import {
+  drawingColors,
   drawingTextFont,
   drawingTextFontSize,
+  selectionColor,
 } from "./drawing-style";
 import type { Point, Shape } from "./model";
 import { getShapeBounds } from "./shape-geometry";
@@ -52,8 +54,8 @@ export function drawShape(context: CanvasRenderingContext2D, shape: Shape) {
   context.save();
   context.globalAlpha = geometricShapeOpacity;
   context.lineWidth = 2;
-  context.strokeStyle = shape.color;
-  context.fillStyle = shape.color;
+  context.strokeStyle = drawingColors[shape.color];
+  context.fillStyle = drawingColors[shape.color];
 
   switch (shape.kind) {
     case "line":
@@ -99,7 +101,7 @@ export function drawSelection(
   context.save();
   context.globalAlpha = 1;
   context.lineWidth = 1;
-  context.strokeStyle = "#2563eb";
+  context.strokeStyle = selectionColor;
   context.setLineDash([5, 4]);
   context.strokeRect(
     bounds.left - selectionPadding,
