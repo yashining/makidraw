@@ -1,70 +1,82 @@
 # MakiDraw
 
 A small drawing app, built one step at a time to learn web development.
-Choose a line, rectangle, ellipse, or text from the toolbar. Draw geometric
-shapes by clicking two points, or press, drag, and release. For text, click its
-position, type a line, and press Enter. Choose black, red, blue, or green for
-the stroke or text. The unfinished geometric shape follows the pointer. Use the
-Select tool to select and move a shape, or send it behind or in front of the
-other shapes. Text uses the bundled open-source Kalam handwriting font.
-Geometric shapes use subtle deterministic double strokes for a sketched look.
-Completed shapes are encoded in the URL, so refreshing or sharing the full URL
-recreates the drawing. Older version 1 and version 2 links still load with black
-shapes, and version 3 links keep their colors. New links use version 4 to store
-text alongside geometric shapes.
 
-Use the Undo button or press Ctrl+Z (Cmd+Z on macOS) to cancel an unfinished
-shape or restore the previous drawing. Clear removes every shape, and Undo can
-restore the cleared drawing.
+Choose a line, rectangle, ellipse, or text from the toolbar. Draw geometric
+shapes by clicking two points, or press, drag, and release. Select existing
+shapes to move them or change their order. Completed drawings are encoded in
+the URL, so refreshing or sharing the full URL recreates the drawing.
+
+Live app: <https://makidraw-production.up.railway.app/>
 
 ## Run locally
 
 Use Node.js 22.12+ (Node 20.19+ also works) and npm.
 
+Install the dependencies once:
+
 ```sh
 npm install
+```
+
+Run the backend in one terminal:
+
+```sh
+npm run dev:server
+```
+
+Run the frontend in another terminal:
+
+```sh
 npm run dev
 ```
 
-Open the local URL printed in the terminal. Editing a file updates the page.
+Open the URL printed by Vite. Vite updates the page when frontend files change
+and proxies `/api` requests to the Express server. `tsx watch` restarts Express
+when backend files change.
+
+## API
+
+`GET /api/health` returns a small JSON response showing that the server is
+running. The deployed endpoint is
+<https://makidraw-production.up.railway.app/api/health>.
+
+The backend does not store drawings yet. Drawing data still lives in the URL.
 
 ## What each file does
 
 - `index.html` defines the page content and loads the TypeScript entry point.
-- `src/main.ts` coordinates drawing state, rendering, and browser interactions.
+- `src/main.ts` coordinates drawing state and browser interactions.
 - `src/canvas-renderer.ts` draws shapes and selection feedback on the canvas.
 - `src/drawing-style.ts` stores shared visual settings for canvas drawings.
 - `src/model.ts` defines the drawing concepts shared by the app.
 - `src/shape-geometry.ts` handles selecting and moving shapes.
 - `src/drawing-url.ts` validates old URL formats and saves the current format.
 - `src/style.css` controls the page's appearance.
-- `package.json` lists the development tools and commands.
-- `package-lock.json` records exact dependency versions for repeatable installs.
-- `tsconfig.json` configures TypeScript's checks.
-- `vite.config.ts` sets the `/makidraw/` URL prefix used by GitHub Pages.
-- `.github/workflows/deploy.yml` tells GitHub how to build and publish the site.
+- `server/index.ts` defines the Express API and serves the built frontend.
+- `tsconfig.json` configures TypeScript checks for the frontend.
+- `tsconfig.server.json` configures compilation for the backend.
+- `vite.config.ts` configures Vite and the development API proxy.
+- `.github/workflows/deploy.yml` builds the frontend for GitHub Pages.
 
-## Build and preview
+## Production build
 
 ```sh
 npm run build
-npm run preview
+npm start
 ```
 
-The build first checks TypeScript, then Vite creates browser-ready files in
-`dist/`. The preview command serves those files locally. `dist/` and
-`node_modules/` are generated, so they are excluded from Git.
+The build checks and bundles the frontend into `dist/`, then compiles the
+backend into `server-dist/`. The start command runs the compiled Express server,
+which serves both the app and API at <http://localhost:3000> by default.
 
 ## Deployment
 
-The public repository is intended to be `yashining/makidraw`, with the site at
-<https://yashining.github.io/makidraw/> once the first deployment succeeds.
+Railway is the primary deployment. It builds the app with `npm run build` and
+starts it with `npm start`. The server listens on Railway's `PORT` environment
+variable and on `0.0.0.0`. Pushes to the connected `main` branch trigger new
+deployments.
 
-In the GitHub repository, select **Settings → Pages → Build and deployment →
-Source → GitHub Actions**. Each push to `main` then installs the locked
-dependencies with `npm ci`, builds the site, and publishes `dist/`.
-The repository's **Actions** tab shows the progress and any errors.
-You can also start a deployment manually with **Run workflow**.
-
-Try changing the stroke color or line width in `src/main.ts`, check it locally,
-then commit and push it to see the same change online.
+GitHub Pages remains available as a frontend-only deployment at
+<https://yashining.github.io/makidraw/>. Its GitHub Actions workflow uses
+`npm run build:pages` so assets use the required `/makidraw/` URL prefix.
