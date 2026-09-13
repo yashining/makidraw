@@ -1,9 +1,12 @@
+import {
+  drawingTextFont,
+  drawingTextFontSize,
+} from "./drawing-style";
 import type { Point, Shape } from "./model";
 import { getShapeBounds } from "./shape-geometry";
 
 const geometricShapeOpacity = 0.6;
 const textOpacity = 0.8;
-export const textFontSize = 20;
 const selectionPadding = 6;
 
 function drawLine(
@@ -64,7 +67,7 @@ export function drawShape(context: CanvasRenderingContext2D, shape: Shape) {
       break;
     case "text":
       context.globalAlpha = textOpacity;
-      context.font = `${textFontSize}px system-ui`;
+      context.font = drawingTextFont;
       context.textBaseline = "top";
       context.fillText(shape.text, shape.position.x, shape.position.y);
       break;
@@ -78,11 +81,11 @@ export function measureShapeText(
   text: string,
 ) {
   context.save();
-  context.font = `${textFontSize}px system-ui`;
+  context.font = drawingTextFont;
   const width = context.measureText(text).width;
   context.restore();
 
-  return { width, height: textFontSize };
+  return { width, height: drawingTextFontSize };
 }
 
 export function drawSelection(

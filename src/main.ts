@@ -1,10 +1,11 @@
+import "@fontsource/kalam/latin-400.css";
 import { loadShapesFromUrl, saveShapesToUrl } from "./drawing-url";
 import {
   drawSelection,
   drawShape,
   measureShapeText,
-  textFontSize,
 } from "./canvas-renderer";
+import { drawingTextFontSize } from "./drawing-style";
 import {
   isGeometricShapeKind,
   isShapeColor,
@@ -211,7 +212,7 @@ function openTextEditor(position: Point) {
   textPosition = position;
   textEditor.style.left = `${position.x * scaleX}px`;
   textEditor.style.top = `${position.y * scaleY}px`;
-  textEditor.style.fontSize = `${textFontSize * scaleY}px`;
+  textEditor.style.fontSize = `${drawingTextFontSize * scaleY}px`;
   textEditor.style.color = selectedColor;
   textEditor.hidden = false;
   textEditor.focus();
@@ -619,3 +620,4 @@ document.addEventListener("keydown", (event) => {
 });
 
 render();
+void document.fonts.ready.then(render);

@@ -6,7 +6,7 @@ shapes by clicking two points, or press, drag, and release. For text, click its
 position, type a line, and press Enter. Choose black, red, blue, or green for
 the stroke or text. The unfinished geometric shape follows the pointer. Use the
 Select tool to select and move a shape, or send it behind or in front of the
-other shapes.
+other shapes. Text uses the bundled open-source Kalam handwriting font.
 Completed shapes are encoded in the URL, so refreshing or sharing the full URL
 recreates the drawing. Older version 1 and version 2 links still load with black
 shapes, and version 3 links keep their colors. New links use version 4 to store
@@ -32,6 +32,7 @@ Open the local URL printed in the terminal. Editing a file updates the page.
 - `index.html` defines the page content and loads the TypeScript entry point.
 - `src/main.ts` coordinates drawing state, rendering, and browser interactions.
 - `src/canvas-renderer.ts` draws shapes and selection feedback on the canvas.
+- `src/drawing-style.ts` stores shared visual settings for canvas drawings.
 - `src/model.ts` defines the drawing concepts shared by the app.
 - `src/shape-geometry.ts` handles selecting and moving shapes.
 - `src/drawing-url.ts` validates old URL formats and saves the current format.
