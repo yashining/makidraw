@@ -62,3 +62,7 @@ export function validateAiEditRequest(
 export function isAiEditResponse(value: unknown): value is AiEditResponse {
   return isObject(value) && isSceneV1(value.scene);
 }
+
+export function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
+  return isObject(value) && typeof value.error === "string";
+}

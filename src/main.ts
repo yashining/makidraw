@@ -1,4 +1,5 @@
 import "@fontsource/kalam/latin-400.css";
+import { initializeAiEditor } from "./ai-editor";
 import { loadShapesFromUrl, saveShapesToUrl } from "./drawing-url";
 import {
   drawSelection,
@@ -618,6 +619,10 @@ document.addEventListener("keydown", (event) => {
   if (color !== undefined && !hasModifier) {
     selectColor(color);
   }
+});
+
+initializeAiEditor({
+  getScene: () => ({ version: 1, shapes }),
 });
 
 render();

@@ -164,18 +164,54 @@
           </button>
         </div>
       </div>
-      <div class="canvas-container">
-        <canvas id="drawing" width="800" height="500" aria-label="Drawing area">
-          Your browser does not support canvas.
-        </canvas>
-        <input
-          id="text-editor"
-          class="text-editor"
-          type="text"
-          aria-label="Drawing text"
-          autocomplete="off"
-          hidden
-        />
+      <div class="drawing-workspace">
+        <div class="canvas-container">
+          <canvas id="drawing" width="800" height="500" aria-label="Drawing area">
+            Your browser does not support canvas.
+          </canvas>
+          <input
+            id="text-editor"
+            class="text-editor"
+            type="text"
+            aria-label="Drawing text"
+            autocomplete="off"
+            hidden
+          />
+        </div>
+        <section class="ai-editor" aria-labelledby="ai-editor-title">
+          <div class="ai-editor-header">
+            <div>
+              <h2 id="ai-editor-title">AI editor</h2>
+              <p>Describe a change to the drawing. The API is a no-op for now.</p>
+            </div>
+            <span id="ai-edit-status" class="ai-edit-status" aria-live="polite">
+              Ready
+            </span>
+          </div>
+          <form id="ai-edit-form" class="ai-edit-form">
+            <label for="ai-edit-prompt">Drawing instruction</label>
+            <div class="ai-edit-input-row">
+              <textarea
+                id="ai-edit-prompt"
+                rows="3"
+                placeholder="Add a red rectangle in the center"
+                autocomplete="off"
+              ></textarea>
+              <button
+                id="ai-edit-submit"
+                type="submit"
+                title="Apply (Ctrl+Enter or Cmd+Enter)"
+              >
+                Apply
+              </button>
+            </div>
+          </form>
+          <div class="prompt-history-header">
+            <h3>Prompt history</h3>
+            <span>Click a prompt to reuse it</span>
+          </div>
+          <ol id="prompt-history" class="prompt-history"></ol>
+        </section>
       </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
