@@ -4,6 +4,10 @@ import {
   type ApiErrorResponse,
   validateAiEditRequest,
 } from "../shared/ai-edit-contract.js";
+import {
+  DrawingAiConfigurationError,
+  editDrawingWithAi,
+} from "./drawing-ai.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -14,7 +18,7 @@ app.get("/api/health", (_request, response) => {
   response.json({ status: "ok" });
 });
 
-app.post("/api/drawing/aiedit", (request, response) => {
+app.post("/api/drawing/aiedit", async (request, response) => {
   const accessToken = process.env.AI_ACCESS_TOKEN;
 
   if (!accessToken) {
@@ -42,8 +46,22 @@ app.post("/api/drawing/aiedit", (request, response) => {
     return;
   }
 
-  const responseBody: AiEditResponse = { scene: validation.value.scene };
-  response.json(responseBody);
+  try {
+    const scene = await editDrawingWithAi(validation.value);
+    const responseBody: AiEditResponse = { scene };
+    response.json(responseBody);
+  } catch (error) {
+    console.error("AI drawing edit failed:", error);
+
+    const errorResponse: ApiErrorResponse = {
+      error:
+        error instanceof DrawingAiConfigurationError
+          ? "AI editing is not configured."
+          : "The AI could not edit the drawing.",
+    };
+    const status = error instanceof DrawingAiConfigurationError ? 503 : 502;
+    response.status(status).json(errorResponse);
+  }
 });
 
 app.use(express.static("dist"));

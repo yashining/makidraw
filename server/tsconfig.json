@@ -5,10 +5,10 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-    "outDir": "server-dist",
-    "rootDir": ".",
+    "outDir": "../server-dist",
+    "rootDir": "..",
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["server", "shared", "src/model.ts"]
+  "include": [".", "../shared", "../src/model.ts"]
 }
