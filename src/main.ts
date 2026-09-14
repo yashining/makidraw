@@ -324,6 +324,24 @@ function bringSelectedShapeToFront() {
   render();
 }
 
+function deleteSelectedShape() {
+  if (selectedShapeIndex === null) {
+    return;
+  }
+
+  const selectedShape = shapes[selectedShapeIndex];
+
+  if (selectedShape === undefined) {
+    return;
+  }
+
+  undoStack.push([...shapes]);
+  shapes.splice(selectedShapeIndex, 1);
+  selectedShapeIndex = null;
+  saveShapesToUrl(shapes);
+  render();
+}
+
 canvas.addEventListener("pointerdown", (event) => {
   if (
     event.button !== 0 ||
@@ -595,21 +613,25 @@ const colorShortcuts: Partial<Record<string, ShapeColor>> = {
 };
 
 document.addEventListener("keydown", (event) => {
+  const key = event.key.toLowerCase();
+  const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
+
   const isUndoShortcut =
     (event.ctrlKey || event.metaKey) &&
     !event.shiftKey &&
-    event.key.toLowerCase() === "z";
+    key === "z";
 
   const isCancelShortcut =
-    event.key === "Escape" && startPoint !== null;
+    key === "escape" && startPoint !== null;
+
+  const isDeleteShortcut =
+    key === "backspace" &&
+    selectedShapeIndex !== null;
 
   if (isUndoShortcut || isCancelShortcut) {
     event.preventDefault();
     undo();
   }
-
-  const key = event.key.toLowerCase();
-  const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
 
   const tool = toolShortcuts[key];
   if (tool !== undefined && !hasModifier) {
@@ -618,6 +640,11 @@ document.addEventListener("keydown", (event) => {
   const color = colorShortcuts[key];
   if (color !== undefined && !hasModifier) {
     selectColor(color);
+  }
+
+  if (isDeleteShortcut) {
+    event.preventDefault();
+    deleteSelectedShape();
   }
 });
 
