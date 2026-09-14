@@ -1,72 +1,73 @@
-export type Point = { x: number; y: number };
+import { z } from "zod";
 
-export type GeometricShapeKind = "line" | "rectangle" | "ellipse";
+export const PointSchema = z.strictObject({
+  x: z.number().finite(),
+  y: z.number().finite(),
+});
 
-export type ShapeKind = GeometricShapeKind | "text";
+export type Point = z.infer<typeof PointSchema>;
 
-export type ShapeColor = "black" | "red" | "blue" | "green";
+export const GeometricShapeKindSchema = z.enum([
+  "line",
+  "rectangle",
+  "ellipse",
+]);
 
-export type GeometricShape = {
-  kind: GeometricShapeKind;
-  color: ShapeColor;
-  start: Point;
-  end: Point;
-};
+export type GeometricShapeKind = z.infer<
+  typeof GeometricShapeKindSchema
+>;
 
-export type TextShape = {
-  kind: "text";
-  color: ShapeColor;
-  position: Point;
-  text: string;
-};
+export const ShapeKindSchema = z.union([
+  GeometricShapeKindSchema,
+  z.literal("text"),
+]);
 
-export type Shape = GeometricShape | TextShape;
+export type ShapeKind = z.infer<typeof ShapeKindSchema>;
+
+export const ShapeColorSchema = z.enum(["black", "red", "blue", "green"]);
+
+export type ShapeColor = z.infer<typeof ShapeColorSchema>;
+
+export const GeometricShapeSchema = z.strictObject({
+  kind: GeometricShapeKindSchema,
+  color: ShapeColorSchema,
+  start: PointSchema,
+  end: PointSchema,
+});
+
+export type GeometricShape = z.infer<typeof GeometricShapeSchema>;
+
+export const TextShapeSchema = z.strictObject({
+  kind: z.literal("text"),
+  color: ShapeColorSchema,
+  position: PointSchema,
+  text: z.string(),
+});
+
+export type TextShape = z.infer<typeof TextShapeSchema>;
+
+export const ShapeSchema = z.union([GeometricShapeSchema, TextShapeSchema]);
+
+export type Shape = z.infer<typeof ShapeSchema>;
 
 export function isGeometricShapeKind(
   value: unknown,
 ): value is GeometricShapeKind {
-  return value === "line" || value === "rectangle" || value === "ellipse";
+  return GeometricShapeKindSchema.safeParse(value).success;
 }
 
 export function isShapeKind(value: unknown): value is ShapeKind {
-  return isGeometricShapeKind(value) || value === "text";
+  return ShapeKindSchema.safeParse(value).success;
 }
 
 export function isShapeColor(value: unknown): value is ShapeColor {
-  return (
-    value === "black" ||
-    value === "red" ||
-    value === "blue" ||
-    value === "green"
-  );
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return ShapeColorSchema.safeParse(value).success;
 }
 
 export function isPoint(value: unknown): value is Point {
-  return (
-    isObject(value) &&
-    typeof value.x === "number" &&
-    Number.isFinite(value.x) &&
-    typeof value.y === "number" &&
-    Number.isFinite(value.y)
-  );
+  return PointSchema.safeParse(value).success;
 }
 
 export function isShape(value: unknown): value is Shape {
-  if (
-    !isObject(value) ||
-    !isShapeKind(value.kind) ||
-    !isShapeColor(value.color)
-  ) {
-    return false;
-  }
-
-  if (value.kind === "text") {
-    return isPoint(value.position) && typeof value.text === "string";
-  }
-
-  return isPoint(value.start) && isPoint(value.end);
+  return ShapeSchema.safeParse(value).success;
 }

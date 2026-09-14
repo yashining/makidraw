@@ -1,68 +1,61 @@
-import { isShape, type Shape } from "../src/model.js";
+import { z } from "zod";
+import { ShapeSchema } from "../src/model.js";
 
-export type SceneV1 = {
-  version: 1;
-  shapes: Shape[];
-};
+export const SceneV1Schema = z.strictObject({
+  version: z.literal(1),
+  shapes: z.array(ShapeSchema),
+});
 
-export type AiEditRequest = {
-  prompt: string;
-  scene: SceneV1;
-};
+export type SceneV1 = z.infer<typeof SceneV1Schema>;
 
-export type AiEditResponse = {
-  scene: SceneV1;
-};
+const PromptSchema = z
+  .string({ error: "A prompt string is required." })
+  .refine((prompt) => prompt.trim().length > 0, {
+    error: "The prompt cannot be empty.",
+  });
 
-export type ApiErrorResponse = {
-  error: string;
-};
+export const AiEditRequestSchema = z.strictObject({
+  prompt: PromptSchema,
+  scene: SceneV1Schema,
+});
+
+export type AiEditRequest = z.infer<typeof AiEditRequestSchema>;
+
+export const AiEditResponseSchema = z.strictObject({
+  scene: SceneV1Schema,
+});
+
+export type AiEditResponse = z.infer<typeof AiEditResponseSchema>;
+
+export const ApiErrorResponseSchema = z.strictObject({
+  error: z.string(),
+});
+
+export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 
 export type AiEditRequestValidation =
   | { ok: true; value: AiEditRequest }
   | { ok: false; error: string };
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
 export function isSceneV1(value: unknown): value is SceneV1 {
-  return (
-    isObject(value) &&
-    value.version === 1 &&
-    Array.isArray(value.shapes) &&
-    value.shapes.every(isShape)
-  );
+  return SceneV1Schema.safeParse(value).success;
 }
 
 export function validateAiEditRequest(
   value: unknown,
 ): AiEditRequestValidation {
-  if (!isObject(value) || typeof value.prompt !== "string") {
-    return { ok: false, error: "A prompt string is required." };
+  const result = AiEditRequestSchema.safeParse(value);
+
+  if (result.success) {
+    return { ok: true, value: result.data };
   }
 
-  if (value.prompt.trim().length === 0) {
-    return { ok: false, error: "The prompt cannot be empty." };
-  }
-
-  if (!isSceneV1(value.scene)) {
-    return { ok: false, error: "A valid version 1 scene is required." };
-  }
+  const promptIssue = result.error.issues.find(
+    (issue) => issue.path[0] === "prompt",
+  );
 
   return {
-    ok: true,
-    value: {
-      prompt: value.prompt,
-      scene: value.scene,
-    },
+    ok: false,
+    error: promptIssue?.message ?? "A valid version 1 scene is required.",
   };
-}
-
-export function isAiEditResponse(value: unknown): value is AiEditResponse {
-  return isObject(value) && isSceneV1(value.scene);
-}
-
-export function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
-  return isObject(value) && typeof value.error === "string";
 }

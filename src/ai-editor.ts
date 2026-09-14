@@ -1,6 +1,6 @@
 import {
-  isAiEditResponse,
-  isApiErrorResponse,
+  AiEditResponseSchema,
+  ApiErrorResponseSchema,
   type AiEditRequest,
   type SceneV1,
 } from "../shared/ai-edit-contract";
@@ -197,15 +197,22 @@ export function initializeAiEditor({ getScene }: AiEditorOptions) {
       }
 
       if (!response.ok) {
-        const message = isApiErrorResponse(responseBody)
-          ? responseBody.error
-          : `Request failed with status ${response.status}.`;
+        const result = ApiErrorResponseSchema.safeParse(responseBody);
+        let message = `Request failed with status ${response.status}`
+
+        if (result.success) {
+          message = result.data.error;
+        }
+
         throw new Error(message);
       }
 
-      if (!isAiEditResponse(responseBody)) {
+      const responseResult = AiEditResponseSchema.safeParse(responseBody);
+      if (!responseResult.success) {
         throw new Error("The server returned an invalid drawing scene.");
       }
+
+      console.log(responseResult.data.scene);
 
       promptHistory.unshift(prompt);
       renderHistory();

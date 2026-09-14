@@ -50,11 +50,12 @@ The backend does not store drawings yet. Drawing data still lives in the URL.
 - `src/main.ts` coordinates drawing state and browser interactions.
 - `src/canvas-renderer.ts` draws shapes and selection feedback on the canvas.
 - `src/drawing-style.ts` stores shared visual settings for canvas drawings.
-- `src/model.ts` defines the drawing concepts shared by the app.
+- `src/model.ts` defines and validates drawing concepts with Zod schemas.
 - `src/shape-geometry.ts` handles selecting and moving shapes.
 - `src/drawing-url.ts` validates old URL formats and saves the current format.
 - `src/style.css` controls the page's appearance.
 - `server/index.ts` defines the Express API and serves the built frontend.
+- `shared/ai-edit-contract.ts` defines the browser/server AI edit contract.
 - `tsconfig.json` configures TypeScript checks for the frontend.
 - `tsconfig.server.json` configures compilation for the backend.
 - `vite.config.ts` configures Vite and the development API proxy.
