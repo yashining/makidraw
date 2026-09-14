@@ -7,11 +7,12 @@ import {
 
 type AiEditorOptions = {
   getScene: () => SceneV1;
+  applyScene: (scene: SceneV1) => boolean;
 };
 
 const accessTokenStorageKey = "makidraw.aiAccessToken";
 
-export function initializeAiEditor({ getScene }: AiEditorOptions) {
+export function initializeAiEditor({ getScene, applyScene }: AiEditorOptions) {
   const formElement = document.querySelector("#ai-edit-form");
   const promptElement = document.querySelector("#ai-edit-prompt");
   const submitElement = document.querySelector("#ai-edit-submit");
@@ -213,11 +214,12 @@ export function initializeAiEditor({ getScene }: AiEditorOptions) {
       }
 
       console.log(responseResult.data.scene);
+      const changed = applyScene(responseResult.data.scene);
+      status.textContent = changed ? "Applied" : "No changes";
 
       promptHistory.unshift(prompt);
       renderHistory();
       promptInput.value = "";
-      status.textContent = "Sent — no changes yet";
     } catch (error) {
       status.textContent =
         error instanceof Error ? error.message : "The request failed.";

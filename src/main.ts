@@ -20,6 +20,7 @@ import {
   findShapeIndexAtPoint,
   translateShape,
 } from "./shape-geometry";
+import type { SceneV1 } from "../shared/ai-edit-contract";
 import "./style.css";
 
 type ToolKind = ShapeKind | "select";
@@ -234,6 +235,14 @@ function resetPointerGesture() {
   isDragging = false;
   movingShapeIndex = null;
   movingShapePreview = null;
+}
+
+function resetDrawingState() {
+  resetPointerGesture();
+  closeTextEditor();
+  selectedShapeIndex = null;
+  startPoint = null;
+  cursorPoint = null;
 }
 
 function undo() {
@@ -648,8 +657,26 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+function applyScene(scene: SceneV1): boolean {
+  const newShapes = scene.shapes;
+  const shapesAreEqual =
+    JSON.stringify(shapes) === JSON.stringify(newShapes);
+
+  if (shapesAreEqual) {
+    return false;
+  }
+
+  undoStack.push([...shapes]);
+  resetDrawingState();
+  shapes.splice(0, shapes.length, ...newShapes);
+  saveShapesToUrl(shapes);
+  render();
+  return true;
+}
+
 initializeAiEditor({
   getScene: () => ({ version: 1, shapes }),
+  applyScene,
 });
 
 render();
