@@ -1,4 +1,7 @@
-import type { PointerMoveMessage } from "../shared/multiplayer-contract";
+import {
+  PointerMoveMessageSchema,
+  type PointerMoveMessage,
+} from "../shared/multiplayer-contract";
 import type { Point } from "./model";
 
 export function connectToMultiplayerRoom(roomId: string): WebSocket {
@@ -24,6 +27,30 @@ export function connectToMultiplayerRoom(roomId: string): WebSocket {
 
   socket.addEventListener("error", () => {
     console.error(`[multiplayer] connection error in room ${roomId}`);
+  });
+
+  socket.addEventListener("message", (event) => {
+    if (typeof event.data !== "string") {
+      return;
+    }
+
+    let message: unknown;
+
+    try {
+      message = JSON.parse(event.data);
+    } catch {
+      console.warn("Received invalid JSON");
+      return;
+    }
+
+    const result = PointerMoveMessageSchema.safeParse(message);
+    if (!result.success) {
+      console.warn("Received invalid multiplayer message");
+      return;
+    }
+
+    const pointerMessage = result.data;
+    console.log("Remote pointer: ", pointerMessage.position);
   });
 
   return socket;

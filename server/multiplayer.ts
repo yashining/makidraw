@@ -1,5 +1,5 @@
 import type { Server } from "node:http";
-import { type WebSocket, WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 import { PointerMoveMessageSchema } from "../shared/multiplayer-contract.js";
 
 const maxRoomSize = 4;
@@ -74,6 +74,16 @@ export function initializeMultiplayerServer(server: Server) {
       if (!result.success) {
         socket.close(1008, "Unsupported multiplayer message.");
         return;
+      }
+
+      for (const roomSocket of room) {
+        if (roomSocket === socket) {
+          continue;
+        }
+        if (roomSocket.readyState !== WebSocket.OPEN) {
+          continue;
+        }
+        roomSocket.send(JSON.stringify(result.data));
       }
 
       console.log(
