@@ -26,7 +26,10 @@ import {
   findShapeIndexAtPoint,
   translateShape,
 } from "./shape-geometry";
-import { connectToMultiplayerRoom } from "./multiplayer";
+import {
+  connectToMultiplayerRoom,
+  sendPointerPosition,
+} from "./multiplayer";
 import type { SceneV1 } from "../shared/ai-edit-contract";
 import "./style.css";
 
@@ -113,6 +116,8 @@ let textPosition: Point | null = null;
 let movingShapeIndex: number | null = null;
 let movingShapePreview: Shape | null = null;
 let copyFeedbackTimeout: number | null = null;
+let multiplayerPointerLastSent: number | null = null;
+const multiplayerPointerUpdateInterval = 50;
 const dragThreshold = 4;
 const copyIconPath =
   "M10 13a5 5 0 0 0 7.1.1l2-2A5 5 0 0 0 12 4l-1.1 1.1 M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1";
@@ -487,6 +492,23 @@ canvas.addEventListener("pointermove", (event) => {
   }
 
   const point = getCanvasPoint(event);
+
+  if (
+    point.x >= 0 &&
+    point.x <= canvas.width &&
+    point.y >= 0 &&
+    point.y <= canvas.height
+  ) {
+    const updateDue =
+      multiplayerPointerLastSent === null ||
+      event.timeStamp >
+        multiplayerPointerLastSent + multiplayerPointerUpdateInterval;
+
+    if (updateDue) {
+      sendPointerPosition(multiplayerSocket, point);
+      multiplayerPointerLastSent = event.timeStamp;
+    }
+  }
 
   if (
     movingShapeIndex !== null &&

@@ -1,3 +1,6 @@
+import type { PointerMoveMessage } from "../shared/multiplayer-contract";
+import type { Point } from "./model";
+
 export function connectToMultiplayerRoom(roomId: string): WebSocket {
   const endpoint = new URL("/api/multiplayer", window.location.href);
 
@@ -24,4 +27,20 @@ export function connectToMultiplayerRoom(roomId: string): WebSocket {
   });
 
   return socket;
+}
+
+export function sendPointerPosition(
+  socket: WebSocket | null,
+  position: Point,
+) {
+  if (socket === null || socket.readyState !== WebSocket.OPEN) {
+    return;
+  }
+
+  const message: PointerMoveMessage = {
+    type: "pointer-move",
+    position,
+  };
+
+  socket.send(JSON.stringify(message));
 }

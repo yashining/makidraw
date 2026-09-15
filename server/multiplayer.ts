@@ -1,5 +1,6 @@
 import type { Server } from "node:http";
 import { type WebSocket, WebSocketServer } from "ws";
+import { PointerMoveMessageSchema } from "../shared/multiplayer-contract.js";
 
 const maxRoomSize = 4;
 const roomIdPattern =
@@ -50,6 +51,34 @@ export function initializeMultiplayerServer(server: Server) {
       console.error(
         `[multiplayer] socket error in room ${roomId.slice(0, 8)}:`,
         error,
+      );
+    });
+
+    socket.on("message", (data, isBinary) => {
+      if (isBinary) {
+        socket.close(1003, "Multiplayer messages must be text.");
+        return;
+      }
+
+      let message: unknown;
+
+      try {
+        message = JSON.parse(data.toString());
+      } catch {
+        socket.close(1007, "Multiplayer messages must be valid JSON.");
+        return;
+      }
+
+      const result = PointerMoveMessageSchema.safeParse(message);
+
+      if (!result.success) {
+        socket.close(1008, "Unsupported multiplayer message.");
+        return;
+      }
+
+      console.log(
+        `[multiplayer] pointer in room ${roomId.slice(0, 8)}`,
+        result.data.position,
       );
     });
 
