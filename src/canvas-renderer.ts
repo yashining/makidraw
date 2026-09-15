@@ -2,6 +2,8 @@ import {
   drawingColors,
   drawingTextFont,
   drawingTextFontSize,
+  remotePointerColor,
+  remotePointerOutlineColor,
   selectionColor,
 } from "./drawing-style";
 import type { Point, Shape } from "./model";
@@ -194,5 +196,29 @@ export function drawSelection(
     bounds.right - bounds.left + selectionPadding * 2,
     bounds.bottom - bounds.top + selectionPadding * 2,
   );
+  context.restore();
+}
+
+export function drawRemotePointer(
+  context: CanvasRenderingContext2D,
+  position: Point,
+) {
+  context.save();
+  context.translate(position.x, position.y);
+  context.fillStyle = remotePointerColor;
+  context.strokeStyle = remotePointerOutlineColor;
+  context.lineJoin = "round";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(0, 0);
+  context.lineTo(3, 16);
+  context.lineTo(7, 11);
+  context.lineTo(12, 16);
+  context.lineTo(16, 12);
+  context.lineTo(11, 7);
+  context.lineTo(16, 4);
+  context.closePath();
+  context.stroke();
+  context.fill();
   context.restore();
 }

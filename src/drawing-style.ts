@@ -8,6 +8,8 @@ export const drawingColors: Record<ShapeColor, string> = {
 };
 
 export const selectionColor = "#7167c7";
+export const remotePointerColor = "#c05287";
+export const remotePointerOutlineColor = "#ffffff";
 export const drawingTextFontFamily = '"Kalam", cursive';
 export const drawingTextFontSize = 24;
 export const drawingTextFont =

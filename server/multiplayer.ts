@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
-import { PointerMoveMessageSchema } from "../shared/multiplayer-contract.js";
+import {
+  PointerMoveMessageSchema,
+  type RemotePointerMoveMessage,
+} from "../shared/multiplayer-contract.js";
 
 const maxRoomSize = 4;
 const roomIdPattern =
@@ -42,6 +46,7 @@ export function initializeMultiplayerServer(server: Server) {
       return;
     }
 
+    const participantId = randomUUID();
     room.add(socket);
     console.log(
       `[multiplayer] joined room ${roomId.slice(0, 8)} (${room.size} connected)`,
@@ -76,6 +81,13 @@ export function initializeMultiplayerServer(server: Server) {
         return;
       }
 
+      const remotePointerMessage: RemotePointerMoveMessage = {
+        type: "pointer-move",
+        participantId,
+        position: result.data.position,
+      };
+      const serializedMessage = JSON.stringify(remotePointerMessage);
+
       for (const roomSocket of room) {
         if (roomSocket === socket) {
           continue;
@@ -83,7 +95,7 @@ export function initializeMultiplayerServer(server: Server) {
         if (roomSocket.readyState !== WebSocket.OPEN) {
           continue;
         }
-        roomSocket.send(JSON.stringify(result.data));
+        roomSocket.send(serializedMessage);
       }
 
       console.log(

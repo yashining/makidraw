@@ -8,6 +8,7 @@ import {
   removeRoomFromUrl,
 } from "./drawing-url";
 import {
+  drawRemotePointer,
   drawSelection,
   drawShape,
   measureShapeText,
@@ -31,6 +32,7 @@ import {
   sendPointerPosition,
 } from "./multiplayer";
 import type { SceneV1 } from "../shared/ai-edit-contract";
+import type { RemotePointerMoveMessage } from "../shared/multiplayer-contract";
 import "./style.css";
 
 type ToolKind = ShapeKind | "select";
@@ -99,9 +101,12 @@ const copyPageUrlIcon = copyPageUrlIconElement;
 const textEditor = textEditorElement;
 
 const shapes = loadShapesFromUrl();
+const remotePointers = new Map<string, Point>();
 let roomId = loadRoomIdFromUrl();
 let multiplayerSocket =
-  roomId === null ? null : connectToMultiplayerRoom(roomId);
+  roomId === null
+    ? null
+    : connectToMultiplayerRoom(roomId, updateRemotePointer);
 const undoStack: Shape[][] = [];
 let selectedTool: ToolKind = "line";
 let selectedColor: ShapeColor = "black";
@@ -140,6 +145,11 @@ function measureText(text: string) {
   return measureShapeText(context, text);
 }
 
+function updateRemotePointer(message: RemotePointerMoveMessage) {
+  remotePointers.set(message.participantId, message.position);
+  render();
+}
+
 function render() {
   context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -174,6 +184,10 @@ function render() {
       start: startPoint,
       end: cursorPoint,
     });
+  }
+
+  for (const remotePointer of remotePointers.values()) {
+    drawRemotePointer(context, remotePointer);
   }
 
   const hasDraft = startPoint !== null || textPosition !== null;
@@ -405,15 +419,20 @@ function toggleDrawingShareable() {
   if (roomId !== null) {
     multiplayerSocket?.close(1000, "Left shared drawing");
     multiplayerSocket = null;
+    remotePointers.clear();
     roomId = null;
     removeRoomFromUrl();
     updateMakeShareableButton();
+    render();
     return;
   }
 
   roomId = crypto.randomUUID();
   saveRoomIdToUrl(roomId);
-  multiplayerSocket = connectToMultiplayerRoom(roomId);
+  multiplayerSocket = connectToMultiplayerRoom(
+    roomId,
+    updateRemotePointer,
+  );
   updateMakeShareableButton();
 }
 
