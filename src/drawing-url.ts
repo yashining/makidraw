@@ -147,14 +147,29 @@ function isDrawingDataV4(value: unknown): value is DrawingDataV4 {
   );
 }
 
-function removeDrawingFromUrl() {
-  const urlWithoutFragment = window.location.pathname + window.location.search;
+function getFragmentParameters() {
+  return new URLSearchParams(window.location.hash.slice(1));
+}
 
-  window.history.replaceState(null, "", urlWithoutFragment);
+function saveFragmentParameters(parameters: URLSearchParams) {
+  const fragment = parameters.toString();
+  const url =
+    window.location.pathname +
+    window.location.search +
+    (fragment.length > 0 ? `#${fragment}` : "");
+
+  window.history.replaceState(null, "", url);
+}
+
+function removeDrawingFromUrl() {
+  const parameters = getFragmentParameters();
+
+  parameters.delete("drawing");
+  saveFragmentParameters(parameters);
 }
 
 export function loadShapesFromUrl(): Shape[] {
-  const parameters = new URLSearchParams(window.location.hash.slice(1));
+  const parameters = getFragmentParameters();
   const drawingJson = parameters.get("drawing");
 
   if (drawingJson === null) {
@@ -256,9 +271,26 @@ export function saveShapesToUrl(shapes: Shape[]) {
       ];
     }),
   };
-  const parameters = new URLSearchParams({
-    drawing: JSON.stringify(drawing),
-  });
+  const parameters = getFragmentParameters();
 
-  window.history.replaceState(null, "", `#${parameters.toString()}`);
+  parameters.set("drawing", JSON.stringify(drawing));
+  saveFragmentParameters(parameters);
+}
+
+export function loadRoomIdFromUrl(): string | null {
+  return getFragmentParameters().get("room");
+}
+
+export function saveRoomIdToUrl(roomId: string) {
+  const parameters = getFragmentParameters();
+
+  parameters.set("room", roomId);
+  saveFragmentParameters(parameters);
+}
+
+export function removeRoomFromUrl() {
+  const parameters = getFragmentParameters();
+
+  parameters.delete("room");
+  saveFragmentParameters(parameters);
 }

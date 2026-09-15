@@ -1,6 +1,12 @@
 import "@fontsource/kalam/latin-400.css";
 import { initializeAiEditor } from "./ai-editor";
-import { loadShapesFromUrl, saveShapesToUrl } from "./drawing-url";
+import {
+  loadRoomIdFromUrl,
+  loadShapesFromUrl,
+  saveRoomIdToUrl,
+  saveShapesToUrl,
+  removeRoomFromUrl,
+} from "./drawing-url";
 import {
   drawSelection,
   drawShape,
@@ -37,6 +43,9 @@ const sendToBackButtonElement = document.querySelector("#send-to-back");
 const bringToFrontButtonElement = document.querySelector("#bring-to-front");
 const undoButtonElement = document.querySelector("#undo");
 const clearButtonElement = document.querySelector("#clear");
+const makeShareableButtonElement = document.querySelector("#make-shareable");
+const copyPageUrlButtonElement = document.querySelector("#copy-page-url");
+const copyPageUrlIconElement = document.querySelector("#copy-page-url-icon");
 const textEditorElement = document.querySelector("#text-editor");
 
 if (!drawingContext) {
@@ -59,6 +68,18 @@ if (!(clearButtonElement instanceof HTMLButtonElement)) {
   throw new Error("Clear button was not found");
 }
 
+if (!(makeShareableButtonElement instanceof HTMLButtonElement)) {
+  throw new Error("Make shareable button was not found");
+}
+
+if (!(copyPageUrlButtonElement instanceof HTMLButtonElement)) {
+  throw new Error("Copy page URL button was not found");
+}
+
+if (!(copyPageUrlIconElement instanceof SVGPathElement)) {
+  throw new Error("Copy page URL icon was not found");
+}
+
 if (!(textEditorElement instanceof HTMLInputElement)) {
   throw new Error("Text editor was not found");
 }
@@ -68,9 +89,13 @@ const sendToBackButton = sendToBackButtonElement;
 const bringToFrontButton = bringToFrontButtonElement;
 const undoButton = undoButtonElement;
 const clearButton = clearButtonElement;
+const makeShareableButton = makeShareableButtonElement;
+const copyPageUrlButton = copyPageUrlButtonElement;
+const copyPageUrlIcon = copyPageUrlIconElement;
 const textEditor = textEditorElement;
 
 const shapes = loadShapesFromUrl();
+let roomId = loadRoomIdFromUrl();
 const undoStack: Shape[][] = [];
 let selectedTool: ToolKind = "line";
 let selectedColor: ShapeColor = "black";
@@ -84,7 +109,11 @@ let isDragging = false;
 let textPosition: Point | null = null;
 let movingShapeIndex: number | null = null;
 let movingShapePreview: Shape | null = null;
+let copyFeedbackTimeout: number | null = null;
 const dragThreshold = 4;
+const copyIconPath =
+  "M10 13a5 5 0 0 0 7.1.1l2-2A5 5 0 0 0 12 4l-1.1 1.1 M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1";
+const copySuccessIconPath = "m5 12 4 4L19 6";
 
 function isToolKind(value: unknown): value is ToolKind {
   return value === "select" || isShapeKind(value);
@@ -351,6 +380,56 @@ function deleteSelectedShape() {
   render();
 }
 
+function updateMakeShareableButton() {
+  const isShareable = roomId !== null;
+
+  makeShareableButton.setAttribute("aria-pressed", String(isShareable));
+  makeShareableButton.setAttribute(
+    "aria-label",
+    isShareable ? "Leave shared drawing" : "Make drawing shareable",
+  );
+  makeShareableButton.title = isShareable
+    ? "Leave shared drawing"
+    : "Make drawing shareable";
+}
+
+function toggleDrawingShareable() {
+  if (roomId !== null) {
+    roomId = null;
+    removeRoomFromUrl();
+    updateMakeShareableButton();
+    return;
+  }
+
+  roomId = crypto.randomUUID();
+  saveRoomIdToUrl(roomId);
+  updateMakeShareableButton();
+}
+
+async function copyPageUrl() {
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    copyPageUrlButton.classList.add("copy-succeeded");
+    copyPageUrlIcon.setAttribute("d", copySuccessIconPath);
+    copyPageUrlButton.setAttribute("aria-label", "Page URL copied");
+    copyPageUrlButton.title = "Copied";
+
+    if (copyFeedbackTimeout !== null) {
+      window.clearTimeout(copyFeedbackTimeout);
+    }
+
+    copyFeedbackTimeout = window.setTimeout(() => {
+      copyPageUrlButton.classList.remove("copy-succeeded");
+      copyPageUrlIcon.setAttribute("d", copyIconPath);
+      copyPageUrlButton.setAttribute("aria-label", "Copy page URL");
+      copyPageUrlButton.title = "Copy page URL";
+      copyFeedbackTimeout = null;
+    }, 1200);
+  } catch (error) {
+    console.error("Could not copy page URL:", error);
+  }
+}
+
 canvas.addEventListener("pointerdown", (event) => {
   if (
     event.button !== 0 ||
@@ -605,6 +684,8 @@ sendToBackButton.addEventListener("click", sendSelectedShapeToBack);
 bringToFrontButton.addEventListener("click", bringSelectedShapeToFront);
 undoButton.addEventListener("click", undo);
 clearButton.addEventListener("click", clearDrawing);
+makeShareableButton.addEventListener("click", toggleDrawingShareable);
+copyPageUrlButton.addEventListener("click", copyPageUrl);
 
 const toolShortcuts: Partial<Record<string, ToolKind>> = {
   v: "select",
@@ -679,5 +760,6 @@ initializeAiEditor({
   applyScene,
 });
 
+updateMakeShareableButton();
 render();
 void document.fonts.ready.then(render);
