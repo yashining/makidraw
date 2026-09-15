@@ -26,6 +26,7 @@ import {
   findShapeIndexAtPoint,
   translateShape,
 } from "./shape-geometry";
+import { connectToMultiplayerRoom } from "./multiplayer";
 import type { SceneV1 } from "../shared/ai-edit-contract";
 import "./style.css";
 
@@ -96,6 +97,8 @@ const textEditor = textEditorElement;
 
 const shapes = loadShapesFromUrl();
 let roomId = loadRoomIdFromUrl();
+let multiplayerSocket =
+  roomId === null ? null : connectToMultiplayerRoom(roomId);
 const undoStack: Shape[][] = [];
 let selectedTool: ToolKind = "line";
 let selectedColor: ShapeColor = "black";
@@ -395,6 +398,8 @@ function updateMakeShareableButton() {
 
 function toggleDrawingShareable() {
   if (roomId !== null) {
+    multiplayerSocket?.close(1000, "Left shared drawing");
+    multiplayerSocket = null;
     roomId = null;
     removeRoomFromUrl();
     updateMakeShareableButton();
@@ -403,6 +408,7 @@ function toggleDrawingShareable() {
 
   roomId = crypto.randomUUID();
   saveRoomIdToUrl(roomId);
+  multiplayerSocket = connectToMultiplayerRoom(roomId);
   updateMakeShareableButton();
 }
 

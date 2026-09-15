@@ -1,4 +1,5 @@
 import express from "express";
+import { createServer } from "node:http";
 import {
   type AiEditResponse,
   type ApiErrorResponse,
@@ -8,6 +9,7 @@ import {
   DrawingAiConfigurationError,
   editDrawingWithAi,
 } from "./drawing-ai.js";
+import { initializeMultiplayerServer } from "./multiplayer.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -66,6 +68,10 @@ app.post("/api/drawing/aiedit", async (request, response) => {
 
 app.use(express.static("dist"));
 
-app.listen(port, "0.0.0.0", () => {
+const server = createServer(app);
+
+initializeMultiplayerServer(server);
+
+server.listen(port, "0.0.0.0", () => {
   console.log(`Server running on port ${port}`);
 });
