@@ -10,8 +10,15 @@ const maxRoomSize = 4;
 const roomIdPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+type Participant = {
+  id: string;
+  socket: WebSocket;
+};
+
+type Room = Set<Participant>;
+
 export function initializeMultiplayerServer(server: Server) {
-  const rooms = new Map<string, Set<WebSocket>>();
+  const rooms = new Map<string, Room>();
   const webSocketServer = new WebSocketServer({
     server,
     path: "/api/multiplayer",
@@ -34,7 +41,7 @@ export function initializeMultiplayerServer(server: Server) {
     let room = rooms.get(roomId);
 
     if (room === undefined) {
-      room = new Set<WebSocket>();
+      room = new Set<Participant>();
       rooms.set(roomId, room);
     }
 
@@ -46,8 +53,11 @@ export function initializeMultiplayerServer(server: Server) {
       return;
     }
 
-    const participantId = randomUUID();
-    room.add(socket);
+    const participant: Participant = {
+      id: randomUUID(),
+      socket,
+    };
+    room.add(participant);
     console.log(
       `[multiplayer] joined room ${roomId.slice(0, 8)} (${room.size} connected)`,
     );
@@ -83,19 +93,19 @@ export function initializeMultiplayerServer(server: Server) {
 
       const remotePointerMessage: RemotePointerMoveMessage = {
         type: "pointer-move",
-        participantId,
+        participantId: participant.id,
         position: result.data.position,
       };
       const serializedMessage = JSON.stringify(remotePointerMessage);
 
-      for (const roomSocket of room) {
-        if (roomSocket === socket) {
+      for (const roomParticipant of room) {
+        if (roomParticipant === participant) {
           continue;
         }
-        if (roomSocket.readyState !== WebSocket.OPEN) {
+        if (roomParticipant.socket.readyState !== WebSocket.OPEN) {
           continue;
         }
-        roomSocket.send(serializedMessage);
+        roomParticipant.socket.send(serializedMessage);
       }
 
       console.log(
@@ -105,7 +115,7 @@ export function initializeMultiplayerServer(server: Server) {
     });
 
     socket.on("close", () => {
-      room.delete(socket);
+      room.delete(participant);
 
       if (room.size === 0) {
         rooms.delete(roomId);
