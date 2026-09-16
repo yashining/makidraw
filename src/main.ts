@@ -165,6 +165,13 @@ function deleteRemotePointer(participantId: string) {
   render();
 }
 
+function getScene(): SceneV1 {
+  return {
+    version: 1,
+    shapes: [...shapes],
+  };
+}
+
 function commitShapes(
   nextShapes: readonly Shape[],
   { recordUndo, origin }: CommitShapesOptions,
@@ -177,7 +184,7 @@ function commitShapes(
   saveShapesToUrl(shapes);
 
   if (origin === "local") {
-    multiplayerClient?.sendSceneUpdate(shapes);
+    multiplayerClient?.sendSceneUpdate(getScene());
   }
 }
 
@@ -842,7 +849,7 @@ function applyScene(
 }
 
 initializeAiEditor({
-  getScene: () => ({ version: 1, shapes }),
+  getScene,
   applyScene: (scene) => applyScene(scene, "local"),
 });
 

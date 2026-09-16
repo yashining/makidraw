@@ -5,7 +5,6 @@ import {
 } from "../shared/multiplayer-contract";
 import {
   type Point,
-  type Shape,
   type SceneV1,
 } from "../shared/scene-contract";
 
@@ -17,7 +16,7 @@ export type MultiplayerHandlers = {
 
 export type MultiplayerClient = {
   sendPointerPosition(position: Point): void;
-  sendSceneUpdate(shapes: readonly Shape[]): void;
+  sendSceneUpdate(scene: SceneV1): void;
   disconnect(): void;
 };
 
@@ -101,15 +100,11 @@ export function connectToMultiplayerRoom(
 
       socket.send(JSON.stringify(message));
     },
-    sendSceneUpdate(shapes) {
+    sendSceneUpdate(scene) {
       if (socket.readyState !== WebSocket.OPEN) {
         return;
       }
 
-      const scene: SceneV1 = {
-        version: 1,
-        shapes: [...shapes],
-      };
       const message: SceneUpdatedMessage = {
         type: "scene-updated",
         scene,
