@@ -32,7 +32,6 @@ import {
   type MultiplayerHandlers,
 } from "./multiplayer";
 import type { SceneV1 } from "../shared/ai-edit-contract";
-import type { RemotePointerMoveMessage } from "../shared/multiplayer-contract";
 import "./style.css";
 
 type ToolKind = ShapeKind | "select";
@@ -104,6 +103,7 @@ const shapes = loadShapesFromUrl();
 const remotePointers = new Map<string, Point>();
 const multiplayerHandlers: MultiplayerHandlers = {
   onPointerMove: updateRemotePointer,
+  onParticipantLeft: deleteRemotePointer,
 };
 let roomId = loadRoomIdFromUrl();
 let multiplayerClient =
@@ -148,8 +148,13 @@ function measureText(text: string) {
   return measureShapeText(context, text);
 }
 
-function updateRemotePointer(message: RemotePointerMoveMessage) {
-  remotePointers.set(message.participantId, message.position);
+function updateRemotePointer(participantId: string, position: Point) {
+  remotePointers.set(participantId, position);
+  render();
+}
+
+function deleteRemotePointer(participantId: string) {
+  remotePointers.delete(participantId);
   render();
 }
 

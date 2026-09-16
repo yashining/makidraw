@@ -1,12 +1,12 @@
 import {
-  RemotePointerMoveMessageSchema,
+  ServerMultiplayerMessageSchema,
   type PointerMoveMessage,
-  type RemotePointerMoveMessage,
 } from "../shared/multiplayer-contract";
 import type { Point } from "./model";
 
 export type MultiplayerHandlers = {
-  onPointerMove(message: RemotePointerMoveMessage): void;
+  onPointerMove(participantId: string, position: Point): void;
+  onParticipantLeft(participantId: string): void;
 };
 
 export type MultiplayerClient = {
@@ -56,13 +56,25 @@ export function connectToMultiplayerRoom(
       return;
     }
 
-    const result = RemotePointerMoveMessageSchema.safeParse(message);
+    const result = ServerMultiplayerMessageSchema.safeParse(message);
+
     if (!result.success) {
       console.warn("Received invalid multiplayer message");
       return;
     }
 
-    handlers.onPointerMove(result.data);
+    switch (result.data.type) {
+      case "pointer-move":
+        handlers.onPointerMove(
+          result.data.participantId,
+          result.data.position,
+        );
+        break;
+
+      case "participant-left":
+        handlers.onParticipantLeft(result.data.participantId);
+        break;
+    }
   });
 
   return {

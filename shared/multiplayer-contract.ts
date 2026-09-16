@@ -17,3 +17,18 @@ export const RemotePointerMoveMessageSchema = z.strictObject({
 export type RemotePointerMoveMessage = z.infer<
   typeof RemotePointerMoveMessageSchema
 >;
+
+export const ParticipantLeftMessageSchema = z.strictObject({
+  type: z.literal("participant-left"),
+  participantId: z.string().uuid(),
+});
+
+export type ParticipantLeftMessage = z.infer<
+  typeof ParticipantLeftMessageSchema
+>;
+
+export const ServerMultiplayerMessageSchema =
+  z.discriminatedUnion("type", [
+    RemotePointerMoveMessageSchema,
+    ParticipantLeftMessageSchema,
+  ]);
