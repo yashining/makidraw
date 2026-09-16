@@ -1,16 +1,23 @@
 import {
   ServerMultiplayerMessageSchema,
   type PointerMoveMessage,
+  type SceneUpdatedMessage,
 } from "../shared/multiplayer-contract";
-import type { Point } from "../shared/scene-contract";
+import {
+  type Point,
+  type Shape,
+  type SceneV1,
+} from "../shared/scene-contract";
 
 export type MultiplayerHandlers = {
   onPointerMove(participantId: string, position: Point): void;
+  onSceneUpdate(scene: SceneV1): void;
   onParticipantLeft(participantId: string): void;
 };
 
 export type MultiplayerClient = {
   sendPointerPosition(position: Point): void;
+  sendSceneUpdate(shapes: readonly Shape[]): void;
   disconnect(): void;
 };
 
@@ -71,6 +78,10 @@ export function connectToMultiplayerRoom(
         );
         break;
 
+      case "scene-updated":
+        handlers.onSceneUpdate(result.data.scene);
+        break;
+
       case "participant-left":
         handlers.onParticipantLeft(result.data.participantId);
         break;
@@ -86,6 +97,22 @@ export function connectToMultiplayerRoom(
       const message: PointerMoveMessage = {
         type: "pointer-move",
         position,
+      };
+
+      socket.send(JSON.stringify(message));
+    },
+    sendSceneUpdate(shapes) {
+      if (socket.readyState !== WebSocket.OPEN) {
+        return;
+      }
+
+      const scene: SceneV1 = {
+        version: 1,
+        shapes: [...shapes],
+      };
+      const message: SceneUpdatedMessage = {
+        type: "scene-updated",
+        scene,
       };
 
       socket.send(JSON.stringify(message));

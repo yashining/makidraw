@@ -35,6 +35,12 @@ import {
 import "./style.css";
 
 type ToolKind = ShapeKind | "select";
+type SceneUpdateOrigin = "local" | "remote";
+
+type CommitShapesOptions = {
+  recordUndo: boolean;
+  origin: SceneUpdateOrigin;
+};
 
 const canvasElement = document.querySelector("#drawing");
 
@@ -104,6 +110,7 @@ const remotePointers = new Map<string, Point>();
 const multiplayerHandlers: MultiplayerHandlers = {
   onPointerMove: updateRemotePointer,
   onParticipantLeft: deleteRemotePointer,
+  onSceneUpdate: applyScene,
 };
 let roomId = loadRoomIdFromUrl();
 let multiplayerClient =
@@ -156,6 +163,22 @@ function updateRemotePointer(participantId: string, position: Point) {
 function deleteRemotePointer(participantId: string) {
   remotePointers.delete(participantId);
   render();
+}
+
+function commitShapes(
+  nextShapes: readonly Shape[],
+  { recordUndo, origin }: CommitShapesOptions,
+) {
+  if (recordUndo) {
+    undoStack.push([...shapes]);
+  }
+
+  shapes.splice(0, shapes.length, ...nextShapes);
+  saveShapesToUrl(shapes);
+
+  if (origin === "local") {
+    multiplayerClient?.sendSceneUpdate(shapes);
+  }
 }
 
 function render() {
@@ -215,14 +238,18 @@ function finishShape(endPoint: Point) {
     return;
   }
 
-  undoStack.push([...shapes]);
-  shapes.push({
-    kind: selectedTool,
-    color: selectedColor,
-    start: startPoint,
-    end: endPoint,
-  });
-  saveShapesToUrl(shapes);
+  commitShapes(
+    [
+      ...shapes,
+      {
+        kind: selectedTool,
+        color: selectedColor,
+        start: startPoint,
+        end: endPoint,
+      },
+    ],
+    { recordUndo: true, origin: "local" },
+  );
   startPoint = null;
   cursorPoint = null;
   render();
@@ -254,14 +281,18 @@ function commitText() {
     return;
   }
 
-  undoStack.push([...shapes]);
-  shapes.push({
-    kind: "text",
-    color: selectedColor,
-    position,
-    text,
-  });
-  saveShapesToUrl(shapes);
+  commitShapes(
+    [
+      ...shapes,
+      {
+        kind: "text",
+        color: selectedColor,
+        position,
+        text,
+      },
+    ],
+    { recordUndo: true, origin: "local" },
+  );
   render();
 }
 
@@ -320,10 +351,11 @@ function undo() {
       return;
     }
 
-    shapes.length = 0;
-    shapes.push(...previousShapes);
+    commitShapes(previousShapes, {
+      recordUndo: false,
+      origin: "local",
+    });
     selectedShapeIndex = null;
-    saveShapesToUrl(shapes);
   }
 
   render();
@@ -342,10 +374,8 @@ function clearDrawing() {
   cursorPoint = null;
 
   if (shapes.length > 0) {
-    undoStack.push([...shapes]);
-    shapes.length = 0;
+    commitShapes([], { recordUndo: true, origin: "local" });
     selectedShapeIndex = null;
-    saveShapesToUrl(shapes);
   }
 
   render();
@@ -362,11 +392,11 @@ function sendSelectedShapeToBack() {
     return;
   }
 
-  undoStack.push([...shapes]);
-  shapes.splice(selectedShapeIndex, 1);
-  shapes.unshift(selectedShape);
+  const nextShapes = [...shapes];
+  nextShapes.splice(selectedShapeIndex, 1);
+  nextShapes.unshift(selectedShape);
+  commitShapes(nextShapes, { recordUndo: true, origin: "local" });
   selectedShapeIndex = 0;
-  saveShapesToUrl(shapes);
   render();
 }
 
@@ -384,11 +414,11 @@ function bringSelectedShapeToFront() {
     return;
   }
 
-  undoStack.push([...shapes]);
-  shapes.splice(selectedShapeIndex, 1);
-  shapes.push(selectedShape);
+  const nextShapes = [...shapes];
+  nextShapes.splice(selectedShapeIndex, 1);
+  nextShapes.push(selectedShape);
+  commitShapes(nextShapes, { recordUndo: true, origin: "local" });
   selectedShapeIndex = shapes.length - 1;
-  saveShapesToUrl(shapes);
   render();
 }
 
@@ -403,10 +433,10 @@ function deleteSelectedShape() {
     return;
   }
 
-  undoStack.push([...shapes]);
-  shapes.splice(selectedShapeIndex, 1);
+  const nextShapes = [...shapes];
+  nextShapes.splice(selectedShapeIndex, 1);
+  commitShapes(nextShapes, { recordUndo: true, origin: "local" });
   selectedShapeIndex = null;
-  saveShapesToUrl(shapes);
   render();
 }
 
@@ -608,9 +638,9 @@ canvas.addEventListener("pointerup", (event) => {
     resetPointerGesture();
 
     if (movedShape !== null) {
-      undoStack.push([...shapes]);
-      shapes[movedShapeIndex] = movedShape;
-      saveShapesToUrl(shapes);
+      const nextShapes = [...shapes];
+      nextShapes[movedShapeIndex] = movedShape;
+      commitShapes(nextShapes, { recordUndo: true, origin: "local" });
     }
 
     render();
@@ -793,7 +823,10 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-function applyScene(scene: SceneV1): boolean {
+function applyScene(
+  scene: SceneV1,
+  origin: SceneUpdateOrigin = "remote",
+): boolean {
   const newShapes = scene.shapes;
   const shapesAreEqual =
     JSON.stringify(shapes) === JSON.stringify(newShapes);
@@ -802,17 +835,15 @@ function applyScene(scene: SceneV1): boolean {
     return false;
   }
 
-  undoStack.push([...shapes]);
   resetDrawingState();
-  shapes.splice(0, shapes.length, ...newShapes);
-  saveShapesToUrl(shapes);
+  commitShapes(newShapes, { recordUndo: true, origin });
   render();
   return true;
 }
 
 initializeAiEditor({
   getScene: () => ({ version: 1, shapes }),
-  applyScene,
+  applyScene: (scene) => applyScene(scene, "local"),
 });
 
 updateMakeShareableButton();
