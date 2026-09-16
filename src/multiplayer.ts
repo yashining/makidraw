@@ -9,10 +9,15 @@ type RemotePointerMoveHandler = (
   message: RemotePointerMoveMessage,
 ) => void;
 
+export type MultiplayerClient = {
+  sendPointerPosition(position: Point): void;
+  disconnect(): void;
+};
+
 export function connectToMultiplayerRoom(
   roomId: string,
   onRemotePointerMove: RemotePointerMoveHandler,
-): WebSocket {
+): MultiplayerClient {
   const endpoint = new URL("/api/multiplayer", window.location.href);
 
   endpoint.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -60,21 +65,21 @@ export function connectToMultiplayerRoom(
     onRemotePointerMove(result.data);
   });
 
-  return socket;
-}
+  return {
+    sendPointerPosition(position) {
+      if (socket.readyState !== WebSocket.OPEN) {
+        return;
+      }
 
-export function sendPointerPosition(
-  socket: WebSocket | null,
-  position: Point,
-) {
-  if (socket === null || socket.readyState !== WebSocket.OPEN) {
-    return;
-  }
+      const message: PointerMoveMessage = {
+        type: "pointer-move",
+        position,
+      };
 
-  const message: PointerMoveMessage = {
-    type: "pointer-move",
-    position,
+      socket.send(JSON.stringify(message));
+    },
+    disconnect() {
+      socket.close(1000, "Left shared drawing");
+    },
   };
-
-  socket.send(JSON.stringify(message));
 }

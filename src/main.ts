@@ -27,10 +27,7 @@ import {
   findShapeIndexAtPoint,
   translateShape,
 } from "./shape-geometry";
-import {
-  connectToMultiplayerRoom,
-  sendPointerPosition,
-} from "./multiplayer";
+import { connectToMultiplayerRoom } from "./multiplayer";
 import type { SceneV1 } from "../shared/ai-edit-contract";
 import type { RemotePointerMoveMessage } from "../shared/multiplayer-contract";
 import "./style.css";
@@ -103,7 +100,7 @@ const textEditor = textEditorElement;
 const shapes = loadShapesFromUrl();
 const remotePointers = new Map<string, Point>();
 let roomId = loadRoomIdFromUrl();
-let multiplayerSocket =
+let multiplayerClient =
   roomId === null
     ? null
     : connectToMultiplayerRoom(roomId, updateRemotePointer);
@@ -417,8 +414,8 @@ function updateMakeShareableButton() {
 
 function toggleDrawingShareable() {
   if (roomId !== null) {
-    multiplayerSocket?.close(1000, "Left shared drawing");
-    multiplayerSocket = null;
+    multiplayerClient?.disconnect();
+    multiplayerClient = null;
     remotePointers.clear();
     roomId = null;
     removeRoomFromUrl();
@@ -429,7 +426,7 @@ function toggleDrawingShareable() {
 
   roomId = crypto.randomUUID();
   saveRoomIdToUrl(roomId);
-  multiplayerSocket = connectToMultiplayerRoom(
+  multiplayerClient = connectToMultiplayerRoom(
     roomId,
     updateRemotePointer,
   );
@@ -524,7 +521,7 @@ canvas.addEventListener("pointermove", (event) => {
         multiplayerPointerLastSent + multiplayerPointerUpdateInterval;
 
     if (updateDue) {
-      sendPointerPosition(multiplayerSocket, point);
+      multiplayerClient?.sendPointerPosition(point);
       multiplayerPointerLastSent = event.timeStamp;
     }
   }
