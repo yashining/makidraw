@@ -27,7 +27,10 @@ import {
   findShapeIndexAtPoint,
   translateShape,
 } from "./shape-geometry";
-import { connectToMultiplayerRoom } from "./multiplayer";
+import {
+  connectToMultiplayerRoom,
+  type MultiplayerHandlers,
+} from "./multiplayer";
 import type { SceneV1 } from "../shared/ai-edit-contract";
 import type { RemotePointerMoveMessage } from "../shared/multiplayer-contract";
 import "./style.css";
@@ -99,11 +102,14 @@ const textEditor = textEditorElement;
 
 const shapes = loadShapesFromUrl();
 const remotePointers = new Map<string, Point>();
+const multiplayerHandlers: MultiplayerHandlers = {
+  onPointerMove: updateRemotePointer,
+};
 let roomId = loadRoomIdFromUrl();
 let multiplayerClient =
   roomId === null
     ? null
-    : connectToMultiplayerRoom(roomId, updateRemotePointer);
+    : connectToMultiplayerRoom(roomId, multiplayerHandlers);
 const undoStack: Shape[][] = [];
 let selectedTool: ToolKind = "line";
 let selectedColor: ShapeColor = "black";
@@ -428,7 +434,7 @@ function toggleDrawingShareable() {
   saveRoomIdToUrl(roomId);
   multiplayerClient = connectToMultiplayerRoom(
     roomId,
-    updateRemotePointer,
+    multiplayerHandlers,
   );
   updateMakeShareableButton();
 }

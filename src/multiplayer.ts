@@ -5,9 +5,9 @@ import {
 } from "../shared/multiplayer-contract";
 import type { Point } from "./model";
 
-type RemotePointerMoveHandler = (
-  message: RemotePointerMoveMessage,
-) => void;
+export type MultiplayerHandlers = {
+  onPointerMove(message: RemotePointerMoveMessage): void;
+};
 
 export type MultiplayerClient = {
   sendPointerPosition(position: Point): void;
@@ -16,7 +16,7 @@ export type MultiplayerClient = {
 
 export function connectToMultiplayerRoom(
   roomId: string,
-  onRemotePointerMove: RemotePointerMoveHandler,
+  handlers: MultiplayerHandlers,
 ): MultiplayerClient {
   const endpoint = new URL("/api/multiplayer", window.location.href);
 
@@ -62,7 +62,7 @@ export function connectToMultiplayerRoom(
       return;
     }
 
-    onRemotePointerMove(result.data);
+    handlers.onPointerMove(result.data);
   });
 
   return {
