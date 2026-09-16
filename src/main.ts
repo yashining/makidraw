@@ -31,7 +31,7 @@ import {
   connectToMultiplayerRoom,
   type MultiplayerHandlers,
 } from "./multiplayer";
-import type { SceneV1 } from "../shared/ai-edit-contract";
+import type { SceneV1 } from "../shared/scene-contract";
 import "./style.css";
 
 type ToolKind = ShapeKind | "select";

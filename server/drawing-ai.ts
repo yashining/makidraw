@@ -1,10 +1,10 @@
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
+import type { AiEditRequest } from "../shared/ai-edit-contract.js";
 import {
-  type AiEditRequest,
   type SceneV1,
   SceneV1Schema,
-} from "../shared/ai-edit-contract.js";
+} from "../shared/scene-contract.js";
 
 export const DRAWING_EDITOR_INSTRUCTIONS = `
 You are the drawing editor for MakiDraw.

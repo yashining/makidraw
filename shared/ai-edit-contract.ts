@@ -1,12 +1,5 @@
 import { z } from "zod";
-import { ShapeSchema } from "../src/model.js";
-
-export const SceneV1Schema = z.strictObject({
-  version: z.literal(1),
-  shapes: z.array(ShapeSchema),
-});
-
-export type SceneV1 = z.infer<typeof SceneV1Schema>;
+import { SceneV1Schema } from "./scene-contract.js";
 
 const PromptSchema = z
   .string({ error: "A prompt string is required." })
@@ -36,10 +29,6 @@ export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
 export type AiEditRequestValidation =
   | { ok: true; value: AiEditRequest }
   | { ok: false; error: string };
-
-export function isSceneV1(value: unknown): value is SceneV1 {
-  return SceneV1Schema.safeParse(value).success;
-}
 
 export function validateAiEditRequest(
   value: unknown,

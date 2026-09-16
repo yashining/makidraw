@@ -2,8 +2,8 @@ import {
   AiEditResponseSchema,
   ApiErrorResponseSchema,
   type AiEditRequest,
-  type SceneV1,
 } from "../shared/ai-edit-contract";
+import type { SceneV1 } from "../shared/scene-contract";
 
 type AiEditorOptions = {
   getScene: () => SceneV1;
