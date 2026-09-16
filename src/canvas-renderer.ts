@@ -6,7 +6,7 @@ import {
   remotePointerOutlineColor,
   selectionColor,
 } from "./drawing-style";
-import type { Point, Shape } from "./model";
+import type { Point, Shape } from "../shared/scene-contract";
 import { getShapeBounds } from "./shape-geometry";
 
 const primaryStrokeOpacity = 0.62;

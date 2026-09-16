@@ -1,4 +1,4 @@
-import type { Point, Shape } from "./model";
+import type { Point, Shape } from "../shared/scene-contract";
 
 export type Bounds = {
   left: number;

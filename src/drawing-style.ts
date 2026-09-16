@@ -1,4 +1,4 @@
-import type { ShapeColor } from "./model";
+import type { ShapeColor } from "../shared/scene-contract";
 
 export const drawingColors: Record<ShapeColor, string> = {
   black: "#3d3947",

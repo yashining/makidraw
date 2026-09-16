@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { PointSchema } from "../src/model.js";
-import { SceneV1Schema } from "./scene-contract.js";
+import { PointSchema, SceneV1Schema } from "./scene-contract.js";
 
 export const PointerMoveMessageSchema = z.strictObject({
   type: z.literal("pointer-move"),

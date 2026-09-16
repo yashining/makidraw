@@ -19,10 +19,11 @@ import {
   isShapeColor,
   isShapeKind,
   type Point,
+  type SceneV1,
   type Shape,
   type ShapeColor,
   type ShapeKind,
-} from "./model";
+} from "../shared/scene-contract";
 import {
   findShapeIndexAtPoint,
   translateShape,
@@ -31,7 +32,6 @@ import {
   connectToMultiplayerRoom,
   type MultiplayerHandlers,
 } from "./multiplayer";
-import type { SceneV1 } from "../shared/scene-contract";
 import "./style.css";
 
 type ToolKind = ShapeKind | "select";

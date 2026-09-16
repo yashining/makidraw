@@ -2,7 +2,7 @@ import {
   ServerMultiplayerMessageSchema,
   type PointerMoveMessage,
 } from "../shared/multiplayer-contract";
-import type { Point } from "./model";
+import type { Point } from "../shared/scene-contract";
 
 export type MultiplayerHandlers = {
   onPointerMove(participantId: string, position: Point): void;

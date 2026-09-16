@@ -4,7 +4,7 @@ import {
   type GeometricShapeKind,
   type Shape,
   type ShapeColor,
-} from "./model";
+} from "../shared/scene-contract";
 
 type EncodedLine = [number, number, number, number];
 type EncodedShapeV2 = [GeometricShapeKind, number, number, number, number];
