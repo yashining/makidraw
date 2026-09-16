@@ -4,6 +4,8 @@ import { WebSocket, WebSocketServer } from "ws";
 import {
   PointerMoveMessageSchema,
   type RemotePointerMoveMessage,
+  type ParticipantLeftMessage,
+  type ServerMultiplayerMessage,
 } from "../shared/multiplayer-contract.js";
 
 const maxRoomSize = 4;
@@ -16,6 +18,24 @@ type Participant = {
 };
 
 type Room = Set<Participant>;
+
+function broadcastToRoom(
+  room: Room,
+  message: ServerMultiplayerMessage,
+  excludedParticipant?: Participant,
+) {
+  const serializedMessage = JSON.stringify(message);
+
+  for (const roomParticipant of room) {
+    if (roomParticipant === excludedParticipant) {
+      continue;
+    }
+    if (roomParticipant.socket.readyState !== WebSocket.OPEN) {
+      continue;
+    }
+    roomParticipant.socket.send(serializedMessage);
+  }
+}
 
 export function initializeMultiplayerServer(server: Server) {
   const rooms = new Map<string, Room>();
@@ -53,11 +73,11 @@ export function initializeMultiplayerServer(server: Server) {
       return;
     }
 
-    const participant: Participant = {
+    const currentParticipant: Participant = {
       id: randomUUID(),
       socket,
     };
-    room.add(participant);
+    room.add(currentParticipant);
     console.log(
       `[multiplayer] joined room ${roomId.slice(0, 8)} (${room.size} connected)`,
     );
@@ -93,20 +113,11 @@ export function initializeMultiplayerServer(server: Server) {
 
       const remotePointerMessage: RemotePointerMoveMessage = {
         type: "pointer-move",
-        participantId: participant.id,
+        participantId: currentParticipant.id,
         position: result.data.position,
       };
-      const serializedMessage = JSON.stringify(remotePointerMessage);
 
-      for (const roomParticipant of room) {
-        if (roomParticipant === participant) {
-          continue;
-        }
-        if (roomParticipant.socket.readyState !== WebSocket.OPEN) {
-          continue;
-        }
-        roomParticipant.socket.send(serializedMessage);
-      }
+      broadcastToRoom(room, remotePointerMessage, currentParticipant);
 
       console.log(
         `[multiplayer] pointer in room ${roomId.slice(0, 8)}`,
@@ -115,7 +126,14 @@ export function initializeMultiplayerServer(server: Server) {
     });
 
     socket.on("close", () => {
-      room.delete(participant);
+      room.delete(currentParticipant);
+
+      const participantLeftMessage: ParticipantLeftMessage = {
+        type: "participant-left",
+        participantId: currentParticipant.id,
+      };
+
+      broadcastToRoom(room, participantLeftMessage);
 
       if (room.size === 0) {
         rooms.delete(roomId);

@@ -32,3 +32,7 @@ export const ServerMultiplayerMessageSchema =
     RemotePointerMoveMessageSchema,
     ParticipantLeftMessageSchema,
   ]);
+
+export type ServerMultiplayerMessage = z.infer<
+  typeof ServerMultiplayerMessageSchema
+>;
