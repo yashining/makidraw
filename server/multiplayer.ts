@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 import {
-  PointerMoveMessageSchema,
   type RemotePointerMoveMessage,
   type ParticipantLeftMessage,
   type ServerMultiplayerMessage,
+  ClientMultiplayerMessageSchema,
 } from "../shared/multiplayer-contract.js";
 
 const maxRoomSize = 4;
@@ -104,25 +104,33 @@ export function initializeMultiplayerServer(server: Server) {
         return;
       }
 
-      const result = PointerMoveMessageSchema.safeParse(message);
+      const result = ClientMultiplayerMessageSchema.safeParse(message);
 
       if (!result.success) {
         socket.close(1008, "Unsupported multiplayer message.");
         return;
       }
 
-      const remotePointerMessage: RemotePointerMoveMessage = {
-        type: "pointer-move",
-        participantId: currentParticipant.id,
-        position: result.data.position,
-      };
+      switch (result.data.type) {
+        case "pointer-move": {
+          const remotePointerMessage: RemotePointerMoveMessage = {
+            type: "pointer-move",
+            participantId: currentParticipant.id,
+            position: result.data.position,
+          };
 
-      broadcastToRoom(room, remotePointerMessage, currentParticipant);
+          broadcastToRoom(room, remotePointerMessage, currentParticipant);
 
-      console.log(
-        `[multiplayer] pointer in room ${roomId.slice(0, 8)}`,
-        result.data.position,
-      );
+          console.log(
+            `[multiplayer] pointer in room ${roomId.slice(0, 8)}`,
+            result.data.position,
+          );
+          break;
+        }
+
+        case "scene-updated":
+          break;
+      }
     });
 
     socket.on("close", () => {
