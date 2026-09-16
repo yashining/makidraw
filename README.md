@@ -5,7 +5,9 @@ A small drawing app, built one step at a time to learn web development.
 Choose a line, rectangle, ellipse, or text from the toolbar. Draw geometric
 shapes by clicking two points, or press, drag, and release. Select existing
 shapes to move them or change their order. Completed drawings are encoded in
-the URL, so refreshing or sharing the full URL recreates the drawing.
+the URL, so refreshing or sharing the full URL recreates the drawing. A drawing
+can also be made shareable for live cursors and scene updates between up to four
+connected participants.
 
 Live app: <https://makidraw-production.up.railway.app/>
 
@@ -41,9 +43,10 @@ npm run dev
 
 Open the URL printed by Vite. Vite updates the page when frontend files change
 and proxies `/api` requests to the Express server. Node's watch mode restarts
-Express when backend files change. On the first AI edit, enter the same access
-token in the browser; MakiDraw saves it in `sessionStorage` for that browser
-tab. The `.env` file is ignored by Git and must not be committed.
+Express when backend files change. The Vite proxy supports both REST requests
+and WebSocket connections. On the first AI edit, enter the same access token in
+the browser; MakiDraw saves it in `sessionStorage` for that browser tab. The
+`.env` file is ignored by Git and must not be committed.
 
 ## API
 
@@ -51,7 +54,28 @@ tab. The `.env` file is ignored by Git and must not be committed.
 running. The deployed endpoint is
 <https://makidraw-production.up.railway.app/api/health>.
 
-The backend does not store drawings yet. Drawing data still lives in the URL.
+The backend does not persist drawings. It only keeps active multiplayer rooms
+and participants in memory while relaying messages between their WebSocket
+connections.
+
+## Multiplayer
+
+The sharing button creates a random room ID and adds it to the URL fragment.
+Anyone opening the full URL joins the same room through
+`/api/multiplayer?room=...`. The server assigns each connection a temporary
+participant ID and relays cursor positions and validated scene updates to the
+other participants in that room.
+
+Every committed local drawing change sends the complete versioned scene. Other
+clients apply it using last-write-wins behavior, update their URL, and retain it
+in their local undo history. Remotely applied scenes are not broadcast again,
+which prevents message loops.
+
+Rooms support at most four participants and exist only in one running server
+process. They disappear when empty or when the server restarts. The server does
+not retain the latest scene, so a late participant starts with the drawing from
+their URL and receives the current shared scene after another participant makes
+a change. There is no conflict resolution for simultaneous edits yet.
 
 ## What each file does
 
@@ -60,14 +84,17 @@ The backend does not store drawings yet. Drawing data still lives in the URL.
 - `src/ai-editor.ts` manages the AI prompt interface, access token, and API call.
 - `src/canvas-renderer.ts` draws shapes and selection feedback on the canvas.
 - `src/drawing-style.ts` stores shared visual settings for canvas drawings.
-- `src/model.ts` defines and validates drawing concepts with Zod schemas.
 - `src/shape-geometry.ts` handles selecting and moving shapes.
 - `src/drawing-url.ts` validates old URL formats and saves the current format.
+- `src/multiplayer.ts` manages the browser WebSocket connection and messages.
 - `src/style.css` controls the page's appearance.
 - `server/index.ts` defines the Express API and serves the built frontend.
 - `server/drawing-ai.ts` prompts OpenAI and validates its scene response.
+- `server/multiplayer.ts` manages in-memory rooms and relays WebSocket messages.
 - `server/tsconfig.json` configures TypeScript compilation for the backend.
 - `shared/ai-edit-contract.ts` defines the browser/server AI edit contract.
+- `shared/multiplayer-contract.ts` defines validated client and server messages.
+- `shared/scene-contract.ts` defines points, shapes, and versioned scenes.
 - `tsconfig.json` configures TypeScript checks for the frontend.
 - `vite.config.ts` configures Vite and the development API proxy.
 - `.github/workflows/deploy.yml` builds the frontend for GitHub Pages.
@@ -96,4 +123,6 @@ be deployed before the running service can read them.
 
 GitHub Pages remains available as a frontend-only deployment at
 <https://yashining.github.io/makidraw/>. Its GitHub Actions workflow uses
-`npm run build:pages` so assets use the required `/makidraw/` URL prefix.
+`npm run build:pages` so assets use the required `/makidraw/` URL prefix. AI
+editing and multiplayer require the Railway backend and are not available on
+the GitHub Pages deployment.
