@@ -42,8 +42,8 @@ export function initializeMultiplayerServer(server: Server) {
   const webSocketServer = new WebSocketServer({
     server,
     path: "/api/multiplayer",
-    maxPayload: 4 * 1024,
-    perMessageDeflate: false,
+    maxPayload: 64 * 1024,
+    perMessageDeflate: true,
   });
 
   webSocketServer.on("connection", (socket, request) => {
@@ -128,8 +128,13 @@ export function initializeMultiplayerServer(server: Server) {
           break;
         }
 
-        case "scene-updated":
+        case "scene-updated": {
+          broadcastToRoom(room, result.data, currentParticipant);
+          console.log(
+            `[multiplayer] scene updated in room ${roomId.slice(0, 8)} by ${currentParticipant.id}`,
+          );
           break;
+        }
       }
     });
 
