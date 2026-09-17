@@ -7,7 +7,8 @@ shapes by clicking two points, or press, drag, and release. Select existing
 shapes to move them or change their order. Completed drawings are encoded in
 the URL, so refreshing or sharing the full URL recreates the drawing. A drawing
 can also be made shareable for live cursors and scene updates between up to four
-connected participants.
+connected participants. The AI editor can apply a text instruction to the
+current drawing.
 
 Live app: <https://makidraw-production.up.railway.app/>
 
@@ -54,9 +55,38 @@ the browser; MakiDraw saves it in `sessionStorage` for that browser tab. The
 running. The deployed endpoint is
 <https://makidraw-production.up.railway.app/api/health>.
 
+`POST /api/drawing/aiedit` accepts a prompt and the current versioned scene. It
+requires the configured access token in an `Authorization: Bearer ...` header
+and returns the complete edited scene.
+
 The backend does not persist drawings. It only keeps active multiplayer rooms
 and participants in memory while relaying messages between their WebSocket
 connections.
+
+## AI editing
+
+The AI editor sends the user's instruction and complete current scene to the
+Express backend. Each request is independent: prompt history is a browser UI
+convenience and is not sent to the model as conversation context. Clicking a
+history item restores that prompt to the editor, and refreshing the page clears
+the history.
+
+The backend validates the request with the shared Zod contract and sends it to
+OpenAI with drawing-specific instructions. OpenAI Structured Outputs uses the
+same `SceneV1Schema`, so the model must return a complete scene containing only
+supported shapes, colors, coordinates, and text. The browser validates the API
+response again before applying it.
+
+An applied AI scene is a normal local commit: it enters undo history, updates
+the drawing URL, renders immediately, and broadcasts to other participants when
+multiplayer is active. If the returned scene is unchanged, the app reports that
+there were no changes and does not create a commit.
+
+`AI_ACCESS_TOKEN` is a simple shared gate for the public endpoint rather than a
+user-account system. The browser asks for it when needed, stores it in
+`sessionStorage` for the current tab, sends it as a bearer token, and removes it
+after a `401` response. `OPENAI_API_KEY` remains on the server and is never sent
+to browser code. Each model request can incur OpenAI API usage costs.
 
 ## Multiplayer
 
